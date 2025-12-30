@@ -1,12 +1,12 @@
-<! DOCTYPE html>
+<!DOCTYPE html>
 <html dir="rtl" lang="he">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מחשבון פיצה חכם - חלוקה חופשית</title>
     <style>
-        : root {
-            --primary:  #e63946;
+        :root {
+            --primary: #e63946;
             --secondary: #457b9d;
             --accent: #f1faee;
             --dark: #1d3557;
@@ -15,7 +15,7 @@
 
         body {
             font-family: 'Segoe UI', system-ui, sans-serif;
-            background:  #f0f2f5;
+            background: #f0f2f5;
             color: var(--dark);
             padding: 20px;
         }
@@ -25,12 +25,12 @@
             margin: 0 auto;
             background: white;
             padding: 40px;
-            border-radius:  24px;
-            box-shadow:  var(--shadow);
+            border-radius: 24px;
+            box-shadow: var(--shadow);
         }
 
         h1 { text-align: center; color: var(--primary); margin-bottom: 30px; }
-        h2 { color:  var(--secondary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        h2 { color: var(--secondary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
 
         .step { display: none; animation: fadeIn 0.4s ease-out; }
         .step.active { display: block; }
@@ -44,11 +44,11 @@
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
-            border-radius:  12px;
-            font-size:  1rem;
+            border-radius: 12px;
+            font-size: 1rem;
         }
 
-        . btn {
+        .btn {
             background: var(--primary);
             color: white;
             padding: 14px;
@@ -65,13 +65,13 @@
 
         .person-card {
             background: #fff;
-            border:  2px solid #f0f0f0;
+            border: 2px solid #f0f0f0;
             padding: 20px;
             border-radius: 18px;
-            margin-bottom:  25px;
+            margin-bottom: 25px;
         }
 
-        .preference-container { display: grid; grid-template-columns: 1fr 1fr; gap:  20px; }
+        .preference-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .pref-list { background: #fafafa; padding: 10px; border-radius: 12px; border: 1px solid #eee; }
 
         .pizza-display-container {
@@ -81,12 +81,12 @@
             margin-top: 30px;
         }
 
-        . pizza-result-card {
+        .pizza-result-card {
             background: #fff;
             padding: 20px;
             border-radius: 20px;
             border: 1px solid #eee;
-            box-shadow:  var(--shadow);
+            box-shadow: var(--shadow);
             page-break-inside: avoid;
         }
 
@@ -116,8 +116,8 @@
             top: 50%;
             left: 50%;
             transform-origin: left center;
-            font-size:  0.75rem;
-            font-weight:  bold;
+            font-size: 0.75rem;
+            font-weight: bold;
             color: #fff;
             background: rgba(0,0,0,0.5);
             border-radius: 50%;
@@ -138,11 +138,11 @@
 
         .order-table th, .order-table td {
             padding: 10px;
-            text-align:  right;
+            text-align: right;
             border-bottom: 1px solid #eee;
         }
 
-        . order-table th { background: var(--accent); color: var(--secondary); }
+        .order-table th { background: var(--accent); color: var(--secondary); }
 
         .print-btn { background: #2a9d8f; margin-top: 20px; }
 
@@ -165,16 +165,16 @@
     <div id="step1" class="step active">
         <h2>הגדרות בסיסיות</h2>
         <div class="form-group">
-            <label>כמה פיצות מזמינים / מכינים? </label>
+            <label>כמה פיצות מזמינים / מכינים?</label>
             <input type="number" id="numPizzas" value="2" min="1">
         </div>
         <div class="form-group">
-            <label>לכמה משולחים מחלקים כל פיצה?</label>
+            <label>לכמה משולשים מחלקים כל פיצה?</label>
             <input type="number" id="slicesPerPizza" value="8" min="1">
-            <p class="hint">ניתן להזין כל מספר (למשל 4, 6, 8, 12... )</p>
+            <p class="hint">ניתן להזין כל מספר (למשל 4, 6, 8, 12...)</p>
         </div>
         <div class="form-group">
-            <label>כמה אנשים אוכלים? </label>
+            <label>כמה אנשים אוכלים?</label>
             <input type="number" id="numPeople" value="3" min="1">
         </div>
         <button class="btn" onclick="goToStep2()">המשך לבחירת תוספות</button>
@@ -193,7 +193,7 @@
     <!-- שלב 3: העדפות -->
     <div id="step3" class="step">
         <h2>העדפות אישיות</h2>
-        <p class="hint">מי שלא בוחר - המערכת תתאים לו את טעם הקבוצה באופן אוטומטי. </p>
+        <p class="hint">מי שלא בוחר - המערכת תתאים לו את טעם הקבוצה באופן אוטומטי.</p>
         <div id="peopleContainer"></div>
         <div style="display: flex; gap: 10px;">
             <button class="btn" style="background: #999;" onclick="goToStep(2)">חזור</button>
@@ -214,19 +214,9 @@
 
 <script>
     const allToppings = ['זיתים', 'פטריות', 'תירס', 'עגבניות', 'בצל', 'בולגרית', 'אננס', 'טונה', 'פלפל חריף', 'שום'];
-    const emojis = { 'זיתים': '🫒', 'פטריות':  '🍄', 'תירס': '🌽', 'עגבניות': '🍅', 'בצל':  '🧅', 'בולגרית': '🧀', 'אננס':  '🍍', 'טונה': '🐟', 'פלפל חריף': '🌶️', 'שום':  '🧄' };
+    const emojis = { 'זיתים': '🫒', 'פטריות': '🍄', 'תירס': '🌽', 'עגבניות': '🍅', 'בצל': '🧅', 'בולגרית': '🧀', 'אננס': '🍍', 'טונה': '🐟', 'פלפל חריף': '🌶️', 'שום': '🧄' };
 
     let config = { numPizzas: 2, slicesPerPizza: 8, numPeople: 3, availableToppings: [], people: [], pizzas: [] };
-
-    // חישוב גורם צפיפות בהתאם לגודל המסך
-    function getScreenDensityFactor() {
-        const width = window.innerWidth;
-        const height = window.innerHeight;
-        const screenArea = width * height;
-        const pixelArea = screenArea / 1000000; // נרמול
-        // בין 0. 5 (למסכים קטנים) ל-2 (למסכים גדולים)
-        return Math. max(0.5, Math.min(2, pixelArea * 0.5));
-    }
 
     function goToStep(s) {
         document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
@@ -243,7 +233,7 @@
         cont.innerHTML = '';
         allToppings.forEach(t => {
             cont.innerHTML += `
-                <div style="background: var(--accent); padding:10px; border-radius:8px; display:flex; align-items:center; gap:8px;">
+                <div style="background:var(--accent); padding:10px; border-radius:8px; display:flex; align-items:center; gap:8px;">
                     <input type="checkbox" id="av_${t}" value="${t}" checked style="width:auto"> 
                     <label for="av_${t}">${emojis[t]} ${t}</label>
                 </div>`;
@@ -260,8 +250,8 @@
         for (let i = 0; i < config.numPeople; i++) {
             cont.innerHTML += `
                 <div class="person-card">
-                    <div class="form-group"><label>שם הסועד: </label><input type="text" id="n_${i}" value="אורח ${i+1}"></div>
-                    <div class="form-group"><label>כמה משולשים הוא יאכל? </label><input type="number" id="sl_${i}" value="2" min="0"></div>
+                    <div class="form-group"><label>שם הסועד:</label><input type="text" id="n_${i}" value="אורח ${i+1}"></div>
+                    <div class="form-group"><label>כמה משולשים הוא יאכל?</label><input type="number" id="sl_${i}" value="2" min="0"></div>
                     <div class="preference-container">
                         <div class="pref-list"><h4>אוהב ❤️</h4><div id="l_list_${i}"></div></div>
                         <div class="pref-list"><h4>שונא ❌</h4><div id="d_list_${i}"></div></div>
@@ -314,7 +304,7 @@
 
         // השלמת העדפות למי שלא בחר
         config.people.forEach(p => {
-            if (! p.hasChoices) p.likes = sortedToppings.slice(0, 2).map(t => ({ name: t, power: 3 }));
+            if (!p.hasChoices) p.likes = sortedToppings.slice(0, 2).map(t => ({ name: t, power: 3 }));
         });
 
         // יצירת מאגר משולשים
@@ -341,7 +331,6 @@
     function drawReport() {
         const cont = document.getElementById('reportContent');
         cont.innerHTML = '';
-        const screenDensity = getScreenDensityFactor();
 
         config.pizzas.forEach(pizza => {
             const card = document.createElement('div');
@@ -368,23 +357,19 @@
                 line.style.transform = `rotate(${i * sliceAngle}deg)`;
                 base.appendChild(line);
 
-                // מספר משולח ממוקם בזווית הנכונה
-                const num = document. createElement('div');
-                num. className = 'slice-number';
+                // מספר משולש ממוקם בזווית הנכונה
+                const num = document.createElement('div');
+                num.className = 'slice-number';
                 const mid = (i * sliceAngle) + (sliceAngle / 2);
+                // רדיוס המספר - קצת פנימה מהקצה
                 const radius = 100; 
                 num.style.transform = `rotate(${mid}deg) translate(${radius}px, -50%) rotate(-${mid}deg)`;
                 num.textContent = i + 1;
                 base.appendChild(num);
 
                 // תוספות ויזואליות רנדומליות בתוך הגזרה
-                // צפיפות התוספות תלויה בעוצמת ההעדפה (power) וגודל המסך
                 slice.toppings.forEach(t => {
-                    let count = t.power * 1.5;
-                    // הוספת תוספות נוספות בהתאם לגודל המסך
-                    count *= screenDensity;
-                    count = Math.ceil(count);
-                    
+                    const count = t.power * 1.5;
                     for(let k=0; k < count; k++) {
                         const icon = document.createElement('div');
                         icon.className = 'topping-icon';
@@ -392,7 +377,7 @@
                         // הגבלת האייקונים לתוך הגזרה
                         const ang = (i * sliceAngle + (sliceAngle*0.1) + Math.random()*(sliceAngle*0.8)) * Math.PI / 180;
                         const dist = 30 + Math.random() * 80;
-                        icon.style. left = `${50 + dist * Math.cos(ang)}%`;
+                        icon.style.left = `${50 + dist * Math.cos(ang)}%`;
                         icon.style.top = `${50 + dist * Math.sin(ang)}%`;
                         base.appendChild(icon);
                     }
@@ -400,18 +385,10 @@
 
                 // שורה בטבלה
                 const row = table.insertRow();
-                row.innerHTML = `<td>${i+1}</td><td><strong>${slice.owner}</strong></td><td>${slice.toppings.map(t => emojis[t. name] + ' ' + t.name).join(', ')}</td>`;
+                row.innerHTML = `<td>${i+1}</td><td><strong>${slice.owner}</strong></td><td>${slice.toppings.map(t => emojis[t.name] + ' ' + t.name).join(', ')}</td>`;
             });
         });
     }
-
-    // טעינה של דו"ח אוטומטית בעת שינוי גודל החלון
-    window.addEventListener('resize', () => {
-        const step4 = document.getElementById('step4');
-        if(step4.classList.contains('active') && config.pizzas.length > 0) {
-            drawReport();
-        }
-    });
 </script>
 
 </body>
