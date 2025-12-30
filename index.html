@@ -11,6 +11,9 @@
             --accent: #f1faee;
             --dark: #1d3557;
             --shadow: 0 4px 20px rgba(0,0,0,0.1);
+            --cheese: #f4d35e;
+            --crust: #e76f51;
+            --sauce: #bc4749;
         }
 
         body {
@@ -69,6 +72,12 @@
             padding: 20px;
             border-radius: 18px;
             margin-bottom: 25px;
+            transition: 0.3s;
+        }
+
+        .person-card.plain-active {
+            border-color: #f4d35e;
+            background: #fffdf5;
         }
 
         .preference-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
@@ -95,58 +104,94 @@
             justify-content: center;
             align-items: center;
             margin-bottom: 20px;
+            background: #f9f9f9;
+            padding: 30px;
+            border-radius: 15px;
         }
 
         .pizza-base {
-            width: 280px;
-            height: 280px;
-            background: #f4d35e;
+            width: 320px;
+            height: 320px;
+            background: var(--cheese);
             border-radius: 50%;
             position: relative;
-            border: 12px solid #e76f51;
+            border: 15px solid var(--crust);
             overflow: hidden;
-            box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 40px rgba(188, 71, 73, 0.4), 0 10px 20px rgba(0,0,0,0.1);
         }
 
-        .topping-icon { position: absolute; font-size: 1.1rem; transform: translate(-50%, -50%); z-index: 2; pointer-events: none; }
-        .slice-line { position: absolute; top: 50%; left: 50%; width: 50%; height: 2px; background: rgba(0,0,0,0.2); transform-origin: left center; z-index: 1; }
+        .pizza-base::before {
+            content: '';
+            position: absolute;
+            top: 5%; left: 5%; right: 5%; bottom: 5%;
+            background: radial-gradient(circle, #ffee93 30%, var(--cheese) 70%);
+            border-radius: 50%;
+            opacity: 0.6;
+        }
+
+        .topping-icon { 
+            position: absolute; 
+            font-size: 1.4rem; 
+            transform: translate(-50%, -50%); 
+            z-index: 2; 
+            pointer-events: none;
+            filter: drop-shadow(1px 2px 2px rgba(0,0,0,0.2));
+        }
+        
+        .slice-line { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 50%; 
+            height: 3px; 
+            background: rgba(188, 71, 73, 0.3); 
+            transform-origin: left center; 
+            z-index: 1; 
+        }
         
         .slice-number {
             position: absolute;
             top: 50%;
             left: 50%;
             transform-origin: left center;
-            font-size: 0.75rem;
+            font-size: 0.85rem;
             font-weight: bold;
             color: #fff;
-            background: rgba(0,0,0,0.5);
+            background: var(--dark);
             border-radius: 50%;
-            width: 20px;
-            height: 20px;
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 4;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
 
         .order-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 15px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
 
         .order-table th, .order-table td {
-            padding: 10px;
+            padding: 12px;
             text-align: right;
             border-bottom: 1px solid #eee;
         }
 
         .order-table th { background: var(--accent); color: var(--secondary); }
 
+        .disabled-pref {
+            opacity: 0.4;
+            pointer-events: none;
+            filter: grayscale(1);
+        }
+
         .print-btn { background: #2a9d8f; margin-top: 20px; }
 
-        .hint { font-size: 0.8rem; color: #666; margin-top: 4px; }
+        .hint { font-size: 0.85rem; color: #666; margin-top: 4px; }
 
         @media print {
             .btn, .no-print, .hint { display: none; }
@@ -161,7 +206,6 @@
 <div class="container" id="mainContainer">
     <h1>🍕 מחשבון הפיצה החכם</h1>
 
-    <!-- שלב 1: הגדרות -->
     <div id="step1" class="step active">
         <h2>הגדרות בסיסיות</h2>
         <div class="form-group">
@@ -171,7 +215,6 @@
         <div class="form-group">
             <label>לכמה משולשים מחלקים כל פיצה?</label>
             <input type="number" id="slicesPerPizza" value="8" min="1">
-            <p class="hint">ניתן להזין כל מספר (למשל 4, 6, 8, 12...)</p>
         </div>
         <div class="form-group">
             <label>כמה אנשים אוכלים?</label>
@@ -180,9 +223,9 @@
         <button class="btn" onclick="goToStep2()">המשך לבחירת תוספות</button>
     </div>
 
-    <!-- שלב 2: תוספות -->
     <div id="step2" class="step">
         <h2>מה בתפריט היום?</h2>
+        <p class="hint">בחרו אילו תוספות זמינות להזמנה (בלי כלום זמין תמיד בהמשך).</p>
         <div id="availableToppings" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;"></div>
         <div style="margin-top: 30px; display: flex; gap: 10px;">
             <button class="btn" style="background: #999;" onclick="goToStep(1)">חזור</button>
@@ -190,10 +233,9 @@
         </div>
     </div>
 
-    <!-- שלב 3: העדפות -->
     <div id="step3" class="step">
         <h2>העדפות אישיות</h2>
-        <p class="hint">מי שלא בוחר - המערכת תתאים לו את טעם הקבוצה באופן אוטומטי.</p>
+        <p class="hint">מי שלא בוחר דבר - המערכת תשלים לו אוטומטית לפי מה שהרוב אוהבים.</p>
         <div id="peopleContainer"></div>
         <div style="display: flex; gap: 10px;">
             <button class="btn" style="background: #999;" onclick="goToStep(2)">חזור</button>
@@ -201,7 +243,6 @@
         </div>
     </div>
 
-    <!-- שלב 4: דו"ח -->
     <div id="step4" class="step">
         <h2 class="no-print">דו"ח חלוקת פיצה סופי</h2>
         <div id="reportContent" class="pizza-display-container"></div>
@@ -213,8 +254,16 @@
 </div>
 
 <script>
+    /** * הערה חשובה מאוד: 
+     * האופציה "בלי כלום" (plain) הכרחית למערכת בשלב ההעדפות. 
+     * אין להסיר אופציה זו ללא בקשה מפורשת מהמשתמש. 
+     */
     const allToppings = ['זיתים', 'פטריות', 'תירס', 'עגבניות', 'בצל', 'בולגרית', 'אננס', 'טונה', 'פלפל חריף', 'שום'];
-    const emojis = { 'זיתים': '🫒', 'פטריות': '🍄', 'תירס': '🌽', 'עגבניות': '🍅', 'בצל': '🧅', 'בולגרית': '🧀', 'אננס': '🍍', 'טונה': '🐟', 'פלפל חריף': '🌶️', 'שום': '🧄' };
+    const emojis = { 
+        'זיתים': '🫒', 'פטריות': '🍄', 'תירס': '🌽', 'עגבניות': '🍅', 
+        'בצל': '🧅', 'בולגרית': '🧀', 'אננס': '🍍', 'טונה': '🐟', 
+        'פלפל חריף': '🌶️', 'שום': '🧄', 'בלי כלום': '🧀' 
+    };
 
     let config = { numPizzas: 2, slicesPerPizza: 8, numPeople: 3, availableToppings: [], people: [], pizzas: [] };
 
@@ -249,7 +298,7 @@
         cont.innerHTML = '';
         for (let i = 0; i < config.numPeople; i++) {
             cont.innerHTML += `
-                <div class="person-card">
+                <div class="person-card" id="card_${i}">
                     <div class="form-group"><label>שם הסועד:</label><input type="text" id="n_${i}" value="אורח ${i+1}"></div>
                     <div class="form-group"><label>כמה משולשים הוא יאכל?</label><input type="number" id="sl_${i}" value="2" min="0"></div>
                     <div class="preference-container">
@@ -257,24 +306,67 @@
                         <div class="pref-list"><h4>שונא ❌</h4><div id="d_list_${i}"></div></div>
                     </div>
                 </div>`;
-            config.availableToppings.forEach(t => {
+            
+            // תוספת קבועה "בלי כלום" בשלב 3 בלבד
+            const currentToppingsWithPlain = [...config.availableToppings, 'בלי כלום'];
+            
+            currentToppingsWithPlain.forEach(t => {
+                const isPlain = t === 'בלי כלום';
                 document.getElementById(`l_list_${i}`).innerHTML += `
-                    <div style="margin-bottom:5px;">
-                        <input type="checkbox" id="l_${i}_${t}" onchange="sync(${i},'${t}','l')" style="width:auto"> ${t}
+                    <div style="margin-bottom:5px;" class="pref-item-${i}" data-topping="${t}">
+                        <input type="checkbox" id="l_${i}_${t}" onchange="sync(${i},'${t}','l')" style="width:auto"> ${isPlain ? '<b>' + t + '</b>' : t}
                         <div id="box_${i}_${t}" style="display:none; align-items:center; gap:5px; margin-right:10px;">
-                            <input type="range" id="ir_${i}_${t}" min="1" max="5" value="3" style="width:60px">
+                            ${!isPlain ? `<input type="range" id="ir_${i}_${t}" min="1" max="5" value="3" style="width:60px">` : '<span style="font-size:0.8rem">רק גבינה</span>'}
                         </div>
                     </div>`;
-                document.getElementById(`d_list_${i}`).innerHTML += `<div><input type="checkbox" id="d_${i}_${t}" onchange="sync(${i},'${t}','d')" style="width:auto"> ${t}</div>`;
+                if (!isPlain) {
+                    document.getElementById(`d_list_${i}`).innerHTML += `<div class="pref-item-${i}" data-topping="${t}"><input type="checkbox" id="d_${i}_${t}" onchange="sync(${i},'${t}','d')" style="width:auto"> ${t}</div>`;
+                }
             });
         }
         goToStep(3);
     }
 
     function sync(i, t, type) {
-        const l = document.getElementById(`l_${i}_${t}`), d = document.getElementById(`d_${i}_${t}`), box = document.getElementById(`box_${i}_${t}`);
-        if(type==='l') { d.disabled = l.checked; box.style.display = l.checked ? 'flex' : 'none'; }
-        else { l.disabled = d.checked; }
+        const l = document.getElementById(`l_${i}_${t}`);
+        const box = document.getElementById(`box_${i}_${t}`);
+        const d = document.getElementById(`d_${i}_${t}`);
+        const card = document.getElementById(`card_${i}`);
+        
+        if (type === 'l') {
+            if (d) d.disabled = l.checked;
+            box.style.display = l.checked ? 'flex' : 'none';
+
+            if (t === 'בלי כלום') {
+                const allOtherItems = document.querySelectorAll(`.pref-item-${i}`);
+                if (l.checked) {
+                    card.classList.add('plain-active');
+                    allOtherItems.forEach(item => {
+                        const topping = item.getAttribute('data-topping');
+                        if (topping !== 'בלי כלום') {
+                            item.classList.add('disabled-pref');
+                            const inputL = item.querySelector(`input[id^="l_"]`);
+                            const inputD = item.querySelector(`input[id^="d_"]`);
+                            if (inputL) { inputL.checked = false; inputL.disabled = true; }
+                            if (inputD) { inputD.checked = false; inputD.disabled = true; }
+                            const itemBox = document.getElementById(`box_${i}_${topping}`);
+                            if (itemBox) itemBox.style.display = 'none';
+                        }
+                    });
+                } else {
+                    card.classList.remove('plain-active');
+                    allOtherItems.forEach(item => {
+                        item.classList.remove('disabled-pref');
+                        const inputL = item.querySelector(`input[id^="l_"]`);
+                        const inputD = item.querySelector(`input[id^="d_"]`);
+                        if (inputL) inputL.disabled = false;
+                        if (inputD) inputD.disabled = false;
+                    });
+                }
+            }
+        } else {
+            if (l) l.disabled = d.checked;
+        }
     }
 
     function generateReport() {
@@ -285,41 +377,51 @@
             const person = {
                 name: document.getElementById(`n_${i}`).value || `אורח ${i+1}`,
                 count: parseInt(document.getElementById(`sl_${i}`).value) || 0,
-                likes: [], hasChoices: false
+                likes: [], isPlain: false, hasChoices: false
             };
-            config.availableToppings.forEach(t => {
-                if(document.getElementById(`l_${i}_${t}`).checked) {
-                    const power = parseInt(document.getElementById(`ir_${i}_${t}`).value);
-                    person.likes.push({ name: t, power });
-                    groupPopularity[t] = (groupPopularity[t] || 0) + power;
+            
+            const currentToppingsWithPlain = [...config.availableToppings, 'בלי כלום'];
+            
+            currentToppingsWithPlain.forEach(t => {
+                const lCheck = document.getElementById(`l_${i}_${t}`);
+                if(lCheck && lCheck.checked) {
                     person.hasChoices = true;
+                    if(t === 'בלי כלום') {
+                        person.isPlain = true;
+                    } else {
+                        const power = parseInt(document.getElementById(`ir_${i}_${t}`).value);
+                        person.likes.push({ name: t, power });
+                        groupPopularity[t] = (groupPopularity[t] || 0) + power;
+                    }
                 }
-                if(document.getElementById(`d_${i}_${t}`).checked) { person.hasChoices = true; }
+                const dCheck = document.getElementById(`d_${i}_${t}`);
+                if(dCheck && dCheck.checked) person.hasChoices = true;
             });
             config.people.push(person);
         }
 
         let sortedToppings = Object.entries(groupPopularity).sort((a,b) => b[1]-a[1]).map(e => e[0]);
-        if (sortedToppings.length === 0) sortedToppings = [config.availableToppings[0] || 'זיתים'];
+        if (sortedToppings.length === 0) sortedToppings = config.availableToppings;
 
-        // השלמת העדפות למי שלא בחר
         config.people.forEach(p => {
-            if (!p.hasChoices) p.likes = sortedToppings.slice(0, 2).map(t => ({ name: t, power: 3 }));
+            if (!p.hasChoices) {
+                p.likes = sortedToppings.slice(0, 2).map(t => ({ name: t, power: 3 }));
+            }
         });
 
-        // יצירת מאגר משולשים
         let slicePool = [];
         config.people.forEach(p => {
-            for(let j=0; j<p.count; j++) slicePool.push({ owner: p.name, toppings: p.likes });
+            for(let j=0; j<p.count; j++) {
+                slicePool.push({ owner: p.name, toppings: p.isPlain ? [] : p.likes, isPlain: p.isPlain });
+            }
         });
 
-        // חלוקה לפיצות
         config.pizzas = Array.from({length: config.numPizzas}, (_, pi) => {
             let slices = [];
             for(let si=0; si<config.slicesPerPizza; si++) {
                 const poolIdx = pi * config.slicesPerPizza + si;
                 if(poolIdx < slicePool.length) slices.push(slicePool[poolIdx]);
-                else slices.push({ owner: "רזרבה", toppings: sortedToppings.slice(0, 2).map(t => ({ name: t, power: 3 })) });
+                else slices.push({ owner: "רזרבה", toppings: sortedToppings.slice(0, 1).map(t => ({ name: t, power: 3 })), isPlain: false });
             }
             return { id: pi+1, slices };
         });
@@ -335,15 +437,7 @@
         config.pizzas.forEach(pizza => {
             const card = document.createElement('div');
             card.className = 'pizza-result-card';
-            
-            let html = `<h3>פיצה מס' ${pizza.id}</h3>`;
-            html += `<div class="pizza-visual-box"><div class="pizza-base" id="p_base_${pizza.id}"></div></div>`;
-            html += `
-                <table class="order-table">
-                    <thead><tr><th>#</th><th>שיוך</th><th>תוספות</th></tr></thead>
-                    <tbody id="p_table_${pizza.id}"></tbody>
-                </table>`;
-            card.innerHTML = html;
+            card.innerHTML = `<h3>🍕 פיצה מס' ${pizza.id}</h3><div class="pizza-visual-box"><div class="pizza-base" id="p_base_${pizza.id}"></div></div><table class="order-table"><thead><tr><th>#</th><th>שיוך</th><th>תוספות</th></tr></thead><tbody id="p_table_${pizza.id}"></tbody></table>`;
             cont.appendChild(card);
 
             const base = document.getElementById(`p_base_${pizza.id}`);
@@ -351,41 +445,39 @@
             const sliceAngle = 360 / config.slicesPerPizza;
 
             pizza.slices.forEach((slice, i) => {
-                // קו הפרדה דינמי
                 const line = document.createElement('div');
                 line.className = 'slice-line';
                 line.style.transform = `rotate(${i * sliceAngle}deg)`;
                 base.appendChild(line);
 
-                // מספר משולש ממוקם בזווית הנכונה
                 const num = document.createElement('div');
                 num.className = 'slice-number';
                 const mid = (i * sliceAngle) + (sliceAngle / 2);
-                // רדיוס המספר - קצת פנימה מהקצה
-                const radius = 100; 
-                num.style.transform = `rotate(${mid}deg) translate(${radius}px, -50%) rotate(-${mid}deg)`;
+                num.style.transform = `rotate(${mid}deg) translate(125px, -50%) rotate(-${mid}deg)`;
                 num.textContent = i + 1;
                 base.appendChild(num);
 
-                // תוספות ויזואליות רנדומליות בתוך הגזרה
-                slice.toppings.forEach(t => {
-                    const count = t.power * 1.5;
-                    for(let k=0; k < count; k++) {
-                        const icon = document.createElement('div');
-                        icon.className = 'topping-icon';
-                        icon.textContent = emojis[t.name];
-                        // הגבלת האייקונים לתוך הגזרה
-                        const ang = (i * sliceAngle + (sliceAngle*0.1) + Math.random()*(sliceAngle*0.8)) * Math.PI / 180;
-                        const dist = 30 + Math.random() * 80;
-                        icon.style.left = `${50 + dist * Math.cos(ang)}%`;
-                        icon.style.top = `${50 + dist * Math.sin(ang)}%`;
-                        base.appendChild(icon);
-                    }
-                });
+                if (!slice.isPlain) {
+                    slice.toppings.forEach(t => {
+                        const count = Math.floor(t.power * (config.slicesPerPizza > 8 ? 4 : 6));
+                        for(let k=0; k < count; k++) {
+                            const icon = document.createElement('div');
+                            icon.className = 'topping-icon';
+                            icon.textContent = emojis[t.name];
+                            const randomAngleOffset = 5 + Math.random() * (sliceAngle - 10);
+                            const ang = (i * sliceAngle + randomAngleOffset) * Math.PI / 180;
+                            const dist = 25 + Math.random() * 105; 
+                            icon.style.left = `${50 + dist * Math.cos(ang)}%`;
+                            icon.style.top = `${50 + dist * Math.sin(ang)}%`;
+                            icon.style.transform = `translate(-50%, -50%) rotate(${Math.random() * 360}deg)`;
+                            base.appendChild(icon);
+                        }
+                    });
+                }
 
-                // שורה בטבלה
                 const row = table.insertRow();
-                row.innerHTML = `<td>${i+1}</td><td><strong>${slice.owner}</strong></td><td>${slice.toppings.map(t => emojis[t.name] + ' ' + t.name).join(', ')}</td>`;
+                const toppingText = slice.isPlain ? 'בלי כלום (מרגריטה)' : slice.toppings.map(t => emojis[t.name] + ' ' + t.name).join(', ');
+                row.innerHTML = `<td>${i+1}</td><td><strong>${slice.owner}</strong></td><td>${toppingText}</td>`;
             });
         });
     }
