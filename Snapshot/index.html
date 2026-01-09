@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מחשבון פיצה חכם - גרסת החלוקה המדויקת</title>
+    <title>מחשבון פיצה חכם - גרסה מקצועית</title>
     <style>
         :root {
             --primary: #e63946;
@@ -21,6 +21,7 @@
             background: #f0f2f5;
             color: var(--dark);
             padding: 20px;
+            line-height: 1.6;
         }
 
         .container {
@@ -33,7 +34,7 @@
         }
 
         h1 { text-align: center; color: var(--primary); margin-bottom: 30px; }
-        h2 { color: var(--secondary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+        h2 { color: var(--secondary); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-top: 30px; }
 
         .step { display: none; animation: fadeIn 0.4s ease-out; }
         .step.active { display: block; }
@@ -43,12 +44,13 @@
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; }
 
-        input, select {
+        input[type="number"], input[type="text"], select {
             width: 100%;
             padding: 12px;
             border: 2px solid #ddd;
             border-radius: 12px;
             font-size: 1rem;
+            box-sizing: border-box;
         }
 
         .btn {
@@ -62,34 +64,57 @@
             width: 100%;
             font-size: 1.1rem;
             transition: 0.2s;
+            margin-top: 10px;
         }
 
         .btn:hover { background: #c1121f; }
+        .btn-small { padding: 8px 15px; font-size: 0.9rem; width: auto; background: var(--secondary); }
 
         .person-card {
             background: #fff;
             border: 2px solid #f0f0f0;
-            padding: 20px;
+            padding: 25px;
             border-radius: 18px;
             margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+
+        .preference-block {
+            border: 1px dashed #ccc;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            background: #fff;
+        }
+
+        .disabled-prefs {
+            opacity: 0.4;
+            pointer-events: none;
         }
 
         .preference-container { 
             display: grid; 
             grid-template-columns: 1fr 1fr 1fr; 
-            gap: 15px; 
-            margin-top: 15px;
+            gap: 10px; 
+            margin-top: 10px;
         }
 
         .pref-list { 
             background: #fafafa; 
             padding: 10px; 
-            border-radius: 12px; 
+            border-radius: 8px; 
             border: 1px solid #eee;
-            font-size: 0.9rem;
         }
 
-        .pref-list h4 { margin-top: 0; text-align: center; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+        .pref-list h4 { margin: 0 0 8px 0; text-align: center; font-size: 0.9rem; color: var(--dark); }
+
+        .pref-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+        }
 
         .pizza-display-container {
             display: flex;
@@ -100,34 +125,40 @@
 
         .pizza-result-card {
             background: #fff;
-            padding: 20px;
+            padding: 30px;
             border-radius: 20px;
             border: 1px solid #eee;
             box-shadow: var(--shadow);
+            page-break-inside: avoid;
         }
 
         .pizza-visual-box {
             display: flex;
             justify-content: center;
             align-items: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            background: #fdfdfd;
+            padding: 20px;
+            border-radius: 20px;
         }
 
         .pizza-base {
-            width: 320px;
-            height: 320px;
+            width: 340px;
+            height: 340px;
             background: var(--cheese);
             border-radius: 50%;
             position: relative;
             border: 15px solid var(--crust);
             overflow: hidden;
+            box-shadow: inset 0 0 50px rgba(0,0,0,0.1);
         }
 
         .topping-icon { 
             position: absolute; 
-            font-size: 1.4rem; 
+            font-size: 1.3rem; 
             transform: translate(-50%, -50%); 
             z-index: 2; 
+            pointer-events: none;
         }
         
         .slice-line { 
@@ -136,27 +167,52 @@
             left: 50%; 
             width: 50%; 
             height: 2px; 
-            background: rgba(0,0,0,0.1); 
+            background: rgba(0,0,0,0.15); 
             transform-origin: left center; 
+            z-index: 1;
         }
 
         .order-table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         .order-table th, .order-table td {
-            padding: 10px;
+            padding: 12px;
             text-align: right;
             border-bottom: 1px solid #eee;
         }
 
-        .radio-cell { text-align: center !important; }
+        .order-table th { background: var(--accent); color: var(--secondary); }
+
+        .slider-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            padding: 3px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            z-index: 9999;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
 
         @media print {
-            .btn, .no-print { display: none; }
-            .container { box-shadow: none; width: 100%; }
+            .btn, .no-print, .toast, .btn-small { display: none !important; }
+            body { background: white; padding: 0; }
+            .container { box-shadow: none; max-width: 100%; padding: 0; }
         }
     </style>
 </head>
@@ -184,7 +240,8 @@
 
     <div id="step2" class="step">
         <h2>מה בתפריט היום?</h2>
-        <div id="availableToppings" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px;"></div>
+        <p>בחרו אילו תוספות קיימות במלאי / במסעדה (מטבח ממוצע מסומן מראש):</p>
+        <div id="availableToppings" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px;"></div>
         <div style="margin-top: 30px; display: flex; gap: 10px;">
             <button class="btn" style="background: #999;" onclick="goToStep(1)">חזור</button>
             <button class="btn" onclick="goToStep3()">המשך להעדפות אישיות</button>
@@ -193,6 +250,7 @@
 
     <div id="step3" class="step">
         <h2>העדפות אישיות</h2>
+        <p>סמנו עבור כל סועד את העדפותיו. המערכת תשלים אוטומטית עד 4 תוספות במידת הצורך.</p>
         <div id="peopleContainer"></div>
         <div style="display: flex; gap: 10px;">
             <button class="btn" style="background: #999;" onclick="goToStep(2)">חזור</button>
@@ -203,16 +261,27 @@
     <div id="step4" class="step">
         <h2 class="no-print">דו"ח חלוקה סופי</h2>
         <div id="reportContent" class="pizza-display-container"></div>
-        <button class="btn no-print" style="margin-top:20px;" onclick="goToStep(1)">התחל מחדש</button>
+        <div style="margin-top: 30px; display: flex; gap: 10px;" class="no-print">
+            <button class="btn" style="background: #2a9d8f;" onclick="window.print()">🖨️ הדפס / שמור כ-PDF</button>
+            <button class="btn" style="background: #999;" onclick="goToStep(1)">התחל מחדש</button>
+        </div>
     </div>
 </div>
 
 <script>
-    const allToppings = ['זיתים', 'פטריות', 'תירס', 'עגבניות', 'בצל', 'בולגרית', 'אננס', 'טונה', 'פלפל חריף', 'שום'];
+    const allToppings = [
+        'זיתים ירוקים', 'פטריות', 'תירס', 'עגבניות', 
+        'בצל', 'בולגרית', 'אננס', 'טונה', 'אנשובי', 
+        'פלפל חריף', 'פלפל', 'שום', 'תפוח אדמה', 'ביצה קשה'
+    ];
+    
+    const defaultAvailable = ['זיתים ירוקים', 'פטריות', 'תירס', 'בצל', 'עגבניות'];
+
     const emojis = { 
-        'זיתים': '🫒', 'פטריות': '🍄', 'תירס': '🌽', 'עגבניות': '🍅', 
-        'בצל': '🧅', 'בולגרית': '🧀', 'אננס': '🍍', 'טונה': '🐟', 
-        'פלפל חריף': '🌶️', 'שום': '🧄', 'בלי כלום': '🧀' 
+        'זיתים ירוקים': '🫒', 'פטריות': '🍄', 'תירס': '🌽', 'עגבניות': '🍅', 
+        'בצל': '🧅', 'בולגרית': '🧀', 'אננס': '🍍', 'טונה': '🐟', 'אנשובי': '🐟', 
+        'פלפל חריף': '🌶️', 'פלפל': '🫑', 'שום': '🧄', 'תפוח אדמה': '🥔', 'ביצה קשה': '🥚',
+        'בלי כלום': '🧀' 
     };
 
     let config = { numPizzas: 2, slicesPerPizza: 8, numPeople: 3, availableToppings: [], people: [] };
@@ -224,16 +293,17 @@
     }
 
     function goToStep2() {
-        config.numPizzas = parseInt(document.getElementById('numPizzas').value);
-        config.slicesPerPizza = parseInt(document.getElementById('slicesPerPizza').value);
-        config.numPeople = parseInt(document.getElementById('numPeople').value);
+        config.numPizzas = parseInt(document.getElementById('numPizzas').value) || 1;
+        config.slicesPerPizza = parseInt(document.getElementById('slicesPerPizza').value) || 8;
+        config.numPeople = parseInt(document.getElementById('numPeople').value) || 1;
         
         const cont = document.getElementById('availableToppings');
         cont.innerHTML = '';
         allToppings.forEach(t => {
+            const isDefault = defaultAvailable.includes(t);
             cont.innerHTML += `
-                <div style="background:var(--accent); padding:10px; border-radius:8px; display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" id="av_${t}" value="${t}" checked style="width:auto"> 
+                <div style="background:var(--accent); padding:10px; border-radius:12px; display:flex; align-items:center; gap:8px;">
+                    <input type="checkbox" id="av_${t}" value="${t}" ${isDefault ? 'checked' : ''} style="width:auto"> 
                     <label for="av_${t}">${emojis[t]} ${t}</label>
                 </div>`;
         });
@@ -242,96 +312,181 @@
 
     function goToStep3() {
         config.availableToppings = [];
-        allToppings.forEach(t => { if(document.getElementById('av_'+t).checked) config.availableToppings.push(t); });
+        allToppings.forEach(t => { 
+            if(document.getElementById('av_'+t).checked) config.availableToppings.push(t); 
+        });
         
         const cont = document.getElementById('peopleContainer');
         cont.innerHTML = '';
         for (let i = 0; i < config.numPeople; i++) {
             cont.innerHTML += `
-                <div class="person-card">
-                    <div style="display:flex; gap:15px;">
-                        <div style="flex:2"><label>שם:</label><input type="text" id="n_${i}" value="סועד ${i+1}"></div>
-                        <div style="flex:1"><label>משולשים:</label><input type="number" id="sl_${i}" value="2" step="0.1" min="0"></div>
+                <div class="person-card" id="card_${i}">
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                        <div style="flex:2"><label>שם הסועד:</label><input type="text" id="n_${i}" value="סועד ${i+1}"></div>
+                        <div style="flex:1"><label>סך משולשים:</label><input type="number" id="sl_total_${i}" value="2" step="0.5" onchange="checkAddButton(${i})"></div>
                     </div>
-                    
-                    <div class="preference-container">
-                        <div class="pref-list"><h4>חייב ❤️</h4><div id="list_must_${i}"></div></div>
-                        <div class="pref-list"><h4>בסדר 👍</h4><div id="list_ok_${i}"></div></div>
-                        <div class="pref-list"><h4>שונא ❌</h4><div id="list_hate_${i}"></div></div>
-                    </div>
-                    <div id="plain_choice_${i}" style="margin-top:10px; font-weight:bold; color:var(--crust);"></div>
+                    <div id="pref_blocks_${i}"></div>
+                    <button class="btn btn-small" id="btn_add_${i}" onclick="addPreferenceBlock(${i})">+ הוסף פירוט למשולש</button>
                 </div>`;
-            
-            // הוספת "בלי כלום"
-            document.getElementById(`plain_choice_${i}`).innerHTML = `
-                <input type="checkbox" id="plain_${i}" style="width:auto"> רוצה רק "בלי כלום" (מרגריטה)`;
-
-            config.availableToppings.forEach(t => {
-                const radioName = `pref_${i}_${t}`;
-                // עמודת חייב
-                document.getElementById(`list_must_${i}`).innerHTML += `
-                    <div style="margin-bottom:8px;">
-                        <input type="radio" name="${radioName}" value="must" id="r_m_${i}_${t}" onchange="toggleSlider(${i},'${t}')"> ${t}
-                        <div id="slider_box_${i}_${t}" style="display:none; margin-top:5px;">
-                           <input type="range" id="ir_${i}_${t}" min="1" max="5" value="3" style="width:60px" oninput="updateTxt(${i},'${t}')">
-                           <span id="txt_${i}_${t}" style="font-size:0.7rem">רגיל</span>
-                        </div>
-                    </div>`;
-                // עמודת בסדר
-                document.getElementById(`list_ok_${i}`).innerHTML += `<div><input type="radio" name="${radioName}" value="ok" onchange="toggleSlider(${i},'${t}')"> ${t}</div>`;
-                // עמודת שונא
-                document.getElementById(`list_hate_${i}`).innerHTML += `<div><input type="radio" name="${radioName}" value="hate" onchange="toggleSlider(${i},'${t}')"> ${t}</div>`;
-            });
+            addPreferenceBlock(i); // Start with one block
         }
         goToStep(3);
     }
 
-    function toggleSlider(i, t) {
-        const isMust = document.getElementById(`r_m_${i}_${t}`).checked;
-        document.getElementById(`slider_box_${i}_${t}`).style.display = isMust ? 'block' : 'none';
+    function addPreferenceBlock(personIdx) {
+        const container = document.getElementById(`pref_blocks_${personIdx}`);
+        const blockCount = container.children.length;
+        const blockId = `block_${personIdx}_${blockCount}`;
+        
+        const blockHtml = `
+            <div class="preference-block" id="${blockId}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#f0f0f0; padding:5px 10px; border-radius:8px;">
+                    <strong>קבוצת משולשים</strong>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="margin:0; font-size:0.8rem;">כמות:</label>
+                        <input type="number" class="block-slices" id="cnt_${blockId}" value="1" step="0.5" style="width:60px; padding:5px;" onchange="checkAddButton(${personIdx})">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom:10px;">
+                    <input type="checkbox" id="plain_${blockId}" style="width:auto" onchange="togglePlain('${blockId}')"> 
+                    <label for="plain_${blockId}" style="display:inline; color:var(--crust); font-size:0.9rem;">רק "בלי כלום"</label>
+                </div>
+
+                <div class="preference-container" id="container_${blockId}">
+                    <div class="pref-list"><h4>חייב ❤️</h4><div id="must_${blockId}"></div></div>
+                    <div class="pref-list"><h4>בסדר 👍</h4><div id="ok_${blockId}"></div></div>
+                    <div class="pref-list"><h4>שונא ❌</h4><div id="hate_${blockId}"></div></div>
+                </div>
+            </div>`;
+        
+        container.insertAdjacentHTML('beforeend', blockHtml);
+        
+        config.availableToppings.forEach(t => {
+            const rName = `pref_${blockId}_${t}`;
+            
+            // Must
+            document.getElementById(`must_${blockId}`).innerHTML += `
+                <div class="pref-item">
+                    <input type="radio" name="${rName}" value="must" id="r_m_${blockId}_${t}" onchange="syncPref('${blockId}','${t}')"> ${t}
+                    <div id="box_ir_m_${blockId}_${t}" style="display:none;" class="slider-container">
+                        <input type="range" id="ir_m_${blockId}_${t}" min="1" max="5" value="3" style="width:40px" oninput="updateRangeLabel('${blockId}','${t}','m')">
+                        <span id="txt_ir_m_${blockId}_${t}" style="font-size:0.5rem">רגיל</span>
+                    </div>
+                </div>`;
+            
+            // OK
+            document.getElementById(`ok_${blockId}`).innerHTML += `
+                <div class="pref-item">
+                    <input type="radio" name="${rName}" value="ok" id="r_o_${blockId}_${t}" onchange="syncPref('${blockId}','${t}')"> ${t}
+                    <div id="box_ir_o_${blockId}_${t}" style="display:none;" class="slider-container">
+                        <input type="range" id="ir_o_${blockId}_${t}" min="1" max="5" value="3" style="width:40px" oninput="updateRangeLabel('${blockId}','${t}','o')">
+                        <span id="txt_ir_o_${blockId}_${t}" style="font-size:0.5rem; color:var(--secondary)">נגיעה</span>
+                    </div>
+                </div>`;
+            
+            // Hate
+            document.getElementById(`hate_${blockId}`).innerHTML += `
+                <div class="pref-item"><input type="radio" name="${rName}" value="hate" onchange="syncPref('${blockId}','${t}')"> ${t}</div>`;
+        });
+        
+        checkAddButton(personIdx);
     }
 
-    function updateTxt(i, t) {
-        const v = document.getElementById(`ir_${i}_${t}`).value;
+    function checkAddButton(personIdx) {
+        const totalNeeded = parseFloat(document.getElementById(`sl_total_${personIdx}`).value) || 0;
+        const currentBlocks = document.getElementById(`pref_blocks_${personIdx}`).querySelectorAll('.block-slices');
+        let currentTotal = 0;
+        currentBlocks.forEach(input => currentTotal += parseFloat(input.value) || 0);
+        
+        const btn = document.getElementById(`btn_add_${personIdx}`);
+        if (currentTotal >= totalNeeded) {
+            btn.style.display = 'none';
+        } else {
+            btn.style.display = 'inline-block';
+        }
+    }
+
+    function syncPref(blockId, t) {
+        const isMust = document.getElementById(`r_m_${blockId}_${t}`).checked;
+        const isOk = document.getElementById(`r_o_${blockId}_${t}`).checked;
+        document.getElementById(`box_ir_m_${blockId}_${t}`).style.display = isMust ? 'flex' : 'none';
+        document.getElementById(`box_ir_o_${blockId}_${t}`).style.display = isOk ? 'flex' : 'none';
+    }
+
+    function updateRangeLabel(blockId, t, type) {
+        const v = document.getElementById(`ir_${type}_${blockId}_${t}`).value;
         const labels = { '1':'נגיעה','2':'מעט','3':'רגיל','4':'נדיב','5':'אקסטרה' };
-        document.getElementById(`txt_${i}_${t}`).innerText = labels[v];
+        document.getElementById(`txt_ir_${type}_${blockId}_${t}`).innerText = (type === 'o' ? '' : '') + labels[v];
+    }
+
+    function togglePlain(blockId) {
+        const isPlain = document.getElementById(`plain_${blockId}`).checked;
+        const cont = document.getElementById(`container_${blockId}`);
+        cont.classList.toggle('disabled-prefs', isPlain);
     }
 
     function generateReport() {
         config.people = [];
+        let globalHateCounts = {};
+        let globalLikeCounts = {};
+        config.availableToppings.forEach(t => { globalHateCounts[t] = 0; globalLikeCounts[t] = 0; });
+
         for (let i = 0; i < config.numPeople; i++) {
-            const isPlain = document.getElementById(`plain_${i}`).checked;
-            let must = [];
-            let ok = [];
-
-            if (!isPlain) {
-                config.availableToppings.forEach(t => {
-                    const radios = document.getElementsByName(`pref_${i}_${t}`);
-                    let selected = "";
-                    radios.forEach(r => { if(r.checked) selected = r.value; });
-
-                    if(selected === "must") {
-                        must.push({ name: t, power: parseFloat(document.getElementById(`ir_${i}_${t}`).value) });
-                    } else if(selected === "ok") {
-                        ok.push({ name: t, power: 2.5 });
+            const personName = document.getElementById(`n_${i}`).value || `סועד ${i+1}`;
+            const blocks = document.getElementById(`pref_blocks_${i}`).children;
+            
+            for (let b = 0; b < blocks.length; b++) {
+                const blockId = blocks[b].id;
+                const isPlain = document.getElementById(`plain_${blockId}`).checked;
+                const sliceCount = parseFloat(document.getElementById(`cnt_${blockId}`).value) || 0;
+                let finalLikes = [];
+                let localHates = [];
+                
+                if (!isPlain) {
+                    let must = [];
+                    let ok = [];
+                    config.availableToppings.forEach(t => {
+                        const radios = document.getElementsByName(`pref_${blockId}_${t}`);
+                        let val = "";
+                        radios.forEach(r => { if(r.checked) val = r.value; });
+                        
+                        if (val === 'must') {
+                            must.push({ name: t, power: parseFloat(document.getElementById(`ir_m_${blockId}_${t}`).value) });
+                            globalLikeCounts[t]++;
+                        } else if (val === 'ok') {
+                            const maxP = parseFloat(document.getElementById(`ir_o_${blockId}_${t}`).value);
+                            ok.push({ name: t, power: Math.floor(Math.random() * maxP) + 1 });
+                            globalLikeCounts[t] += 0.5;
+                        } else if (val === 'hate') {
+                            localHates.push(t);
+                            globalHateCounts[t]++;
+                        }
+                    });
+                    
+                    finalLikes = [...must];
+                    if (finalLikes.length < 4 && ok.length > 0) {
+                        const needed = 4 - finalLikes.length;
+                        finalLikes.push(...ok.sort(() => 0.5 - Math.random()).slice(0, needed));
                     }
-                });
-
-                // לוגיקת השלמה ל-4 תוספות
-                if (must.length < 4 && ok.length > 0) {
-                    const needed = 4 - must.length;
-                    const shuffledOk = ok.sort(() => 0.5 - Math.random());
-                    must.push(...shuffledOk.slice(0, needed));
                 }
+                
+                config.people.push({
+                    name: personName,
+                    count: sliceCount,
+                    likes: finalLikes,
+                    hates: localHates,
+                    isPlain: isPlain
+                });
             }
-
-            config.people.push({
-                name: document.getElementById(`n_${i}`).value,
-                count: parseFloat(document.getElementById(`sl_${i}`).value) || 0,
-                likes: must,
-                isPlain: isPlain
-            });
         }
+
+        // Reserve Logic: Pick 2 toppings that are least hated, then most liked
+        const sortedForReserve = [...config.availableToppings].sort((a, b) => {
+            if (globalHateCounts[a] !== globalHateCounts[b]) return globalHateCounts[a] - globalHateCounts[b];
+            return globalLikeCounts[b] - globalLikeCounts[a];
+        });
+        config.reserveToppings = sortedForReserve.slice(0, 2).map(t => ({ name: t, power: 3 }));
 
         drawReport();
         goToStep(4);
@@ -340,62 +495,74 @@
     function drawReport() {
         const cont = document.getElementById('reportContent');
         cont.innerHTML = '';
-        
         let slicePool = [];
+        
         config.people.forEach(p => {
             let tempCount = p.count;
             while(tempCount > 0) {
-                let size = tempCount >= 1 ? 1 : tempCount;
-                slicePool.push({ owner: p.name, toppings: p.likes, isPlain: p.isPlain, size: size });
-                tempCount -= size;
+                let portion = tempCount >= 1 ? 1 : tempCount;
+                slicePool.push({ owner: p.name, toppings: p.likes, isPlain: p.isPlain, size: portion.toFixed(1), hates: p.hates });
+                tempCount -= portion;
             }
         });
 
-        const totalSlicesNeeded = Math.ceil(config.numPizzas * config.slicesPerPizza);
+        const totalSlices = config.numPizzas * config.slicesPerPizza;
         
         for (let pi = 0; pi < config.numPizzas; pi++) {
-            const card = document.createElement('div');
-            card.className = 'pizza-result-card';
-            card.innerHTML = `<h3>🍕 פיצה ${pi+1}</h3><div class="pizza-visual-box"><div class="pizza-base" id="base_${pi}"></div></div><table class="order-table"><thead><tr><th>#</th><th>למי</th><th>תוספות</th></tr></thead><tbody id="table_${pi}"></tbody></table>`;
-            cont.appendChild(card);
-
+            const pizzaCard = document.createElement('div');
+            pizzaCard.className = 'pizza-result-card';
+            pizzaCard.innerHTML = `<h3>🍕 פיצה מספר ${pi + 1}</h3><div class="pizza-visual-box"><div class="pizza-base" id="base_${pi}"></div></div><table class="order-table"><thead><tr><th>#</th><th>שיוך</th><th>תוספות</th></tr></thead><tbody id="table_${pi}"></tbody></table>`;
+            cont.appendChild(pizzaCard);
             const base = document.getElementById(`base_${pi}`);
             const table = document.getElementById(`table_${pi}`);
 
             for (let si = 0; si < config.slicesPerPizza; si++) {
                 const poolIdx = pi * config.slicesPerPizza + si;
-                const sliceData = slicePool[poolIdx] || { owner: "רזרבה", toppings: [], isPlain: true, size: 1 };
-                
-                // קווי חלוקה
-                const line = document.createElement('div');
-                line.className = 'slice-line';
-                line.style.transform = `rotate(${(si * 360/config.slicesPerPizza)}deg)`;
-                base.appendChild(line);
+                let data = slicePool[poolIdx];
+                let currentToppings = [];
+                let label = "";
 
-                // תוספות ויזואליות
-                if (!sliceData.isPlain) {
-                    sliceData.toppings.forEach(t => {
-                        const count = Math.floor(t.power * 3);
-                        for(let k=0; k<count; k++) {
-                            const icon = document.createElement('div');
-                            icon.className = 'topping-icon';
-                            icon.textContent = emojis[t.name];
-                            const angle = (si * 360/config.slicesPerPizza + Math.random()*(360/config.slicesPerPizza)) * Math.PI/180;
-                            const dist = 20 + Math.random()*100;
-                            icon.style.left = `${50 + dist * Math.cos(angle)}%`;
-                            icon.style.top = `${50 + dist * Math.sin(angle)}%`;
-                            base.appendChild(icon);
-                        }
-                    });
+                if (!data) {
+                    // Reserve slice
+                    label = "רזרבה";
+                    currentToppings = config.reserveToppings;
+                    data = { owner: "רזרבה", size: 1, isPlain: false };
+                } else if (data.isPlain) {
+                    label = data.owner;
+                } else {
+                    label = data.owner;
+                    currentToppings = data.toppings;
+                    // If no likes but has hates, ensure reserve doesn't use hates
+                    if (currentToppings.length === 0) {
+                        currentToppings = config.reserveToppings.filter(t => !data.hates.includes(t.name));
+                    }
                 }
 
+                const line = document.createElement('div');
+                line.className = 'slice-line';
+                line.style.transform = `rotate(${si * (360/config.slicesPerPizza)}deg)`;
+                base.appendChild(line);
+
+                currentToppings.forEach(t => {
+                    const density = Math.floor(t.power * 2.5);
+                    for(let k=0; k < density; k++) {
+                        const icon = document.createElement('div');
+                        icon.className = 'topping-icon';
+                        icon.innerText = emojis[t.name];
+                        const randAngle = (si * (360/config.slicesPerPizza) + 5 + Math.random() * ((360/config.slicesPerPizza) - 10)) * Math.PI / 180;
+                        const dist = 30 + Math.random() * 100;
+                        icon.style.left = `${50 + dist * Math.cos(randAngle)}%`;
+                        icon.style.top = `${50 + dist * Math.sin(randAngle)}%`;
+                        base.appendChild(icon);
+                    }
+                });
+
                 const row = table.insertRow();
-                const topText = sliceData.isPlain ? "בלי כלום" : sliceData.toppings.map(t => emojis[t.name]+t.name).join(', ');
-                row.innerHTML = `<td>${si+1}</td><td>${sliceData.owner} (${sliceData.size})</td><td>${topText}</td>`;
+                const toppingList = (data.isPlain && label !== "רזרבה") ? "מרגריטה" : (currentToppings.length > 0 ? currentToppings.map(t => emojis[t.name] + " " + t.name).join(', ') : "בלי כלום");
+                row.innerHTML = `<td>${si+1}</td><td><strong>${label}</strong> <small>(${data.size})</small></td><td>${toppingList}</td>`;
             }
         }
     }
 </script>
-
 </body>
 </html>
