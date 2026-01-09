@@ -164,24 +164,6 @@
             z-index: 1;
         }
 
-        .slice-label {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform-origin: left center;
-            font-weight: bold;
-            color: white;
-            background: var(--dark);
-            border-radius: 50%;
-            width: 22px;
-            height: 22px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            z-index: 5;
-        }
-
         .order-table {
             width: 100%;
             border-collapse: collapse;
@@ -360,16 +342,28 @@
             
             config.availableToppings.forEach(t => {
                 const rName = `pref_${i}_${t}`;
+                
+                // Must column
                 document.getElementById(`list_must_${i}`).innerHTML += `
                     <div class="pref-item">
                         <input type="radio" name="${rName}" value="must" id="r_m_${i}_${t}" onchange="syncPref(${i},'${t}')"> ${t}
-                        <div id="box_ir_${i}_${t}" style="display:none;" class="slider-container">
-                            <input type="range" id="ir_${i}_${t}" min="1" max="5" value="3" style="width:50px" oninput="updateRangeLabel(${i},'${t}')">
-                            <span id="txt_ir_${i}_${t}" style="font-size:0.6rem">רגיל</span>
+                        <div id="box_ir_m_${i}_${t}" style="display:none;" class="slider-container">
+                            <input type="range" id="ir_m_${i}_${t}" min="1" max="5" value="3" style="width:50px" oninput="updateRangeLabel(${i},'${t}','m')">
+                            <span id="txt_ir_m_${i}_${t}" style="font-size:0.55rem">רגיל</span>
                         </div>
                     </div>`;
+                
+                // OK column (now with max limit)
                 document.getElementById(`list_ok_${i}`).innerHTML += `
-                    <div class="pref-item"><input type="radio" name="${rName}" value="ok" onchange="syncPref(${i},'${t}')"> ${t}</div>`;
+                    <div class="pref-item">
+                        <input type="radio" name="${rName}" value="ok" id="r_o_${i}_${t}" onchange="syncPref(${i},'${t}')"> ${t}
+                        <div id="box_ir_o_${i}_${t}" style="display:none;" class="slider-container">
+                            <input type="range" id="ir_o_${i}_${t}" min="1" max="5" value="3" style="width:50px" oninput="updateRangeLabel(${i},'${t}','o')">
+                            <span id="txt_ir_o_${i}_${t}" style="font-size:0.55rem; color:var(--secondary)">עד רגיל</span>
+                        </div>
+                    </div>`;
+                
+                // Hate column
                 document.getElementById(`list_hate_${i}`).innerHTML += `
                     <div class="pref-item"><input type="radio" name="${rName}" value="hate" onchange="syncPref(${i},'${t}')"> ${t}</div>`;
             });
@@ -379,13 +373,17 @@
 
     function syncPref(i, t) {
         const isMust = document.getElementById(`r_m_${i}_${t}`).checked;
-        document.getElementById(`box_ir_${i}_${t}`).style.display = isMust ? 'flex' : 'none';
+        const isOk = document.getElementById(`r_o_${i}_${t}`).checked;
+        
+        document.getElementById(`box_ir_m_${i}_${t}`).style.display = isMust ? 'flex' : 'none';
+        document.getElementById(`box_ir_o_${i}_${t}`).style.display = isOk ? 'flex' : 'none';
     }
 
-    function updateRangeLabel(i, t) {
-        const v = document.getElementById(`ir_${i}_${t}`).value;
+    function updateRangeLabel(i, t, type) {
+        const v = document.getElementById(`ir_${type}_${i}_${t}`).value;
         const labels = { '1':'נגיעה','2':'מעט','3':'רגיל','4':'נדיב','5':'אקסטרה' };
-        document.getElementById(`txt_ir_${i}_${t}`).innerText = labels[v];
+        const prefix = type === 'o' ? 'עד ' : '';
+        document.getElementById(`txt_ir_${type}_${i}_${t}`).innerText = prefix + labels[v];
     }
 
     function togglePlain(i) {
@@ -419,13 +417,20 @@
                     const radios = document.getElementsByName(`pref_${i}_${t}`);
                     let val = "";
                     radios.forEach(r => { if(r.checked) val = r.value; });
+                    
                     if (val === 'must') {
-                        must.push({ name: t, power: parseFloat(document.getElementById(`ir_${i}_${t}`).value) });
+                        must.push({ name: t, power: parseFloat(document.getElementById(`ir_m_${i}_${t}`).value) });
                     } else if (val === 'ok') {
-                        ok.push({ name: t, power: 2.5 });
+                        // Max limit selected by user
+                        const maxPower = parseFloat(document.getElementById(`ir_o_${i}_${t}`).value);
+                        // Random value between 1 and maxPower (inclusive)
+                        const randomPower = Math.floor(Math.random() * maxPower) + 1;
+                        ok.push({ name: t, power: randomPower });
                     }
                 });
+                
                 finalLikes = [...must];
+                // Fill up to 4 toppings if possible using OK choices
                 if (finalLikes.length < 4 && ok.length > 0) {
                     const needed = 4 - finalLikes.length;
                     const shuffledOk = ok.sort(() => 0.5 - Math.random());
