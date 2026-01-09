@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>מחשבון פיצה חכם - גרסה מקצועית</title>
+    <!-- הוספת האייקון לאתר -->
+    <link rel="icon" type="image/png" href="icon.png">
     <style>
         :root {
             --primary: #e63946;
@@ -68,6 +70,8 @@
         }
 
         .btn:hover { background: #c1121f; }
+        .btn-small { padding: 8px 15px; font-size: 0.9rem; width: auto; background: var(--secondary); }
+        .btn-small:disabled { background: #ccc; cursor: not-allowed; }
 
         .person-card {
             background: #fff;
@@ -76,10 +80,17 @@
             border-radius: 18px;
             margin-bottom: 25px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.02);
-            transition: opacity 0.3s;
         }
 
-        .person-card.disabled-prefs .preference-container {
+        .preference-block {
+            border: 1px dashed #ccc;
+            padding: 15px;
+            border-radius: 12px;
+            margin-top: 15px;
+            background: #fff;
+        }
+
+        .disabled-prefs {
             opacity: 0.4;
             pointer-events: none;
         }
@@ -87,25 +98,25 @@
         .preference-container { 
             display: grid; 
             grid-template-columns: 1fr 1fr 1fr; 
-            gap: 15px; 
-            margin-top: 15px;
+            gap: 10px; 
+            margin-top: 10px;
         }
 
         .pref-list { 
             background: #fafafa; 
-            padding: 15px; 
-            border-radius: 12px; 
+            padding: 10px; 
+            border-radius: 8px; 
             border: 1px solid #eee;
         }
 
-        .pref-list h4 { margin: 0 0 10px 0; text-align: center; font-size: 1rem; color: var(--dark); }
+        .pref-list h4 { margin: 0 0 8px 0; text-align: center; font-size: 0.9rem; color: var(--dark); }
 
         .pref-item {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-            font-size: 0.9rem;
+            gap: 5px;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
         }
 
         .pizza-display-container {
@@ -183,32 +194,41 @@
             flex-direction: column;
             align-items: center;
             background: #fff;
-            padding: 5px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 3px;
+            border-radius: 6px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
         }
 
-        .toast {
+        .save-badge {
             position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--dark);
+            top: 10px;
+            right: 10px;
+            background: #2a9d8f;
             color: white;
-            padding: 12px 25px;
-            border-radius: 30px;
-            z-index: 9999;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            opacity: 0.8;
+            z-index: 1000;
+        }
+
+        .error-msg {
+            color: var(--primary);
+            font-size: 0.8rem;
+            margin-top: 4px;
+            display: none;
         }
 
         @media print {
-            .btn, .no-print, .toast { display: none !important; }
+            .btn, .no-print, .toast, .btn-small, .save-badge { display: none !important; }
             body { background: white; padding: 0; }
             .container { box-shadow: none; max-width: 100%; padding: 0; }
         }
     </style>
 </head>
 <body>
+
+<div class="save-badge no-print" id="saveBadge">הנתונים נשמרים אוטומטית</div>
 
 <div class="container" id="mainContainer">
     <h1>🍕 מחשבון הפיצה החכם</h1>
@@ -228,6 +248,7 @@
             <input type="number" id="numPeople" value="3" min="1">
         </div>
         <button class="btn" onclick="goToStep2()">המשך לבחירת תוספות</button>
+        <button class="btn" style="background: #999; margin-top: 10px; font-size: 0.9rem;" onclick="clearSavedData()">נקה נתונים שמורים והתחל מחדש</button>
     </div>
 
     <div id="step2" class="step">
@@ -255,20 +276,19 @@
         <div id="reportContent" class="pizza-display-container"></div>
         <div style="margin-top: 30px; display: flex; gap: 10px;" class="no-print">
             <button class="btn" style="background: #2a9d8f;" onclick="window.print()">🖨️ הדפס / שמור כ-PDF</button>
-            <button class="btn" style="background: #999;" onclick="goToStep(1)">התחל מחדש</button>
+            <button class="btn" style="background: #999;" onclick="resetToStep1()">התחל מחדש</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Configuration
+    const STORAGE_KEY = 'pizza_calc_data_v2';
     const allToppings = [
         'זיתים ירוקים', 'פטריות', 'תירס', 'עגבניות', 
         'בצל', 'בולגרית', 'אננס', 'טונה', 'אנשובי', 
         'פלפל חריף', 'פלפל', 'שום', 'תפוח אדמה', 'ביצה קשה'
     ];
     
-    // Average kitchen defaults
     const defaultAvailable = ['זיתים ירוקים', 'פטריות', 'תירס', 'בצל', 'עגבניות'];
 
     const emojis = { 
@@ -278,185 +298,402 @@
         'בלי כלום': '🧀' 
     };
 
-    let config = { numPizzas: 2, slicesPerPizza: 8, numPeople: 3, availableToppings: [], people: [] };
+    let config = { 
+        currentStep: 1,
+        numPizzas: 2, 
+        slicesPerPizza: 8, 
+        numPeople: 3, 
+        availableToppings: [...defaultAvailable], 
+        people: [] 
+    };
 
-    function showToast(msg) {
-        const t = document.createElement('div');
-        t.className = 'toast';
-        t.innerText = msg;
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 2500);
+    window.onload = function() {
+        loadData();
+        setupAutoSave();
+    };
+
+    function setupAutoSave() {
+        document.getElementById('mainContainer').addEventListener('input', (e) => {
+            if (e.target.classList.contains('block-slices') || e.target.id.startsWith('sl_total_')) {
+                const pIdx = e.target.id.split('_').pop();
+                if (!isNaN(pIdx)) validateSlices(parseInt(pIdx));
+            }
+            saveData();
+        });
+        document.getElementById('mainContainer').addEventListener('change', () => saveData());
     }
 
-    function goToStep(s) {
-        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
-        document.getElementById('step' + s).classList.add('active');
-        window.scrollTo(0,0);
-    }
-
-    function goToStep2() {
+    function saveData() {
         config.numPizzas = parseInt(document.getElementById('numPizzas').value) || 1;
         config.slicesPerPizza = parseInt(document.getElementById('slicesPerPizza').value) || 8;
         config.numPeople = parseInt(document.getElementById('numPeople').value) || 1;
         
+        config.availableToppings = [];
+        allToppings.forEach(t => {
+            const el = document.getElementById('av_' + t);
+            if (el && el.checked) config.availableToppings.push(t);
+        });
+
+        config.people = [];
+        for (let i = 0; i < config.numPeople; i++) {
+            const nameEl = document.getElementById(`n_${i}`);
+            if (!nameEl) continue;
+
+            const person = {
+                name: nameEl.value,
+                totalSlices: parseFloat(document.getElementById(`sl_total_${i}`).value) || 0,
+                blocks: []
+            };
+
+            const blocksCont = document.getElementById(`pref_blocks_${i}`);
+            if (blocksCont) {
+                const blocks = blocksCont.children;
+                for (let b = 0; b < blocks.length; b++) {
+                    const blockId = blocks[b].id;
+                    const blockData = {
+                        id: blockId,
+                        slices: parseFloat(document.getElementById(`cnt_${blockId}`).value) || 0,
+                        isPlain: document.getElementById(`plain_${blockId}`).checked,
+                        prefs: {}
+                    };
+
+                    config.availableToppings.forEach(t => {
+                        const radios = document.getElementsByName(`pref_${blockId}_${t}`);
+                        let val = "";
+                        radios.forEach(r => { if(r.checked) val = r.value; });
+                        
+                        if (val) {
+                            blockData.prefs[t] = {
+                                type: val,
+                                power: (val === 'must' || val === 'ok') ? 
+                                       document.getElementById(`ir_${val === 'must' ? 'm' : 'o'}_${blockId}_${t}`).value : null
+                            };
+                        }
+                    });
+                    person.blocks.push(blockData);
+                }
+            }
+            config.people.push(person);
+        }
+
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+        
+        const badge = document.getElementById('saveBadge');
+        badge.innerText = "נשמר ✓";
+        badge.style.background = "#457b9d";
+        setTimeout(() => {
+            badge.innerText = "הנתונים נשמרים אוטומטית";
+            badge.style.background = "#2a9d8f";
+        }, 1500);
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return;
+        
+        try {
+            config = JSON.parse(saved);
+            document.getElementById('numPizzas').value = config.numPizzas;
+            document.getElementById('slicesPerPizza').value = config.slicesPerPizza;
+            document.getElementById('numPeople').value = config.numPeople;
+
+            if (config.currentStep >= 2) renderStep2();
+            if (config.currentStep >= 3) renderStep3(true);
+
+            goToStep(config.currentStep);
+        } catch(e) { console.error("Load error", e); }
+    }
+
+    function validateSlices(personIdx) {
+        const totalInput = document.getElementById(`sl_total_${personIdx}`);
+        const totalNeeded = parseFloat(totalInput.value) || 0;
+        const blocks = document.getElementById(`pref_blocks_${personIdx}`).querySelectorAll('.block-slices');
+        let currentSum = 0;
+        
+        blocks.forEach(input => {
+            let val = parseFloat(input.value) || 0;
+            if (val > totalNeeded) {
+                input.value = totalNeeded;
+                val = totalNeeded;
+            }
+            if (currentSum + val > totalNeeded) {
+                val = Math.max(0, totalNeeded - currentSum);
+                input.value = val;
+            }
+            currentSum += val;
+        });
+
+        checkAddButton(personIdx);
+    }
+
+    function clearSavedData() {
+        if(confirm("בטוח שברצונך למחוק הכל ולהתחיל מחדש?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    }
+
+    function goToStep(s) {
+        config.currentStep = s;
+        document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + s).classList.add('active');
+        window.scrollTo(0,0);
+        saveData();
+    }
+
+    function renderStep2() {
         const cont = document.getElementById('availableToppings');
         cont.innerHTML = '';
         allToppings.forEach(t => {
-            const isDefault = defaultAvailable.includes(t);
+            const isChecked = config.availableToppings.includes(t);
             cont.innerHTML += `
                 <div style="background:var(--accent); padding:10px; border-radius:12px; display:flex; align-items:center; gap:8px;">
-                    <input type="checkbox" id="av_${t}" value="${t}" ${isDefault ? 'checked' : ''} style="width:auto"> 
+                    <input type="checkbox" id="av_${t}" value="${t}" ${isChecked ? 'checked' : ''} style="width:auto"> 
                     <label for="av_${t}">${emojis[t]} ${t}</label>
                 </div>`;
         });
+    }
+
+    function goToStep2() {
+        renderStep2();
         goToStep(2);
     }
 
-    function goToStep3() {
-        config.availableToppings = [];
-        allToppings.forEach(t => { 
-            if(document.getElementById('av_'+t).checked) config.availableToppings.push(t); 
-        });
+    function renderStep3(isRestore = false) {
+        if (!isRestore) {
+            config.availableToppings = [];
+            allToppings.forEach(t => { 
+                if(document.getElementById('av_'+t).checked) config.availableToppings.push(t); 
+            });
+        }
         
         const cont = document.getElementById('peopleContainer');
         cont.innerHTML = '';
+        
         for (let i = 0; i < config.numPeople; i++) {
+            const personData = isRestore && config.people[i] ? config.people[i] : null;
+            
             cont.innerHTML += `
                 <div class="person-card" id="card_${i}">
-                    <div style="display:flex; gap:15px; margin-bottom:15px;">
-                        <div style="flex:2"><label>שם הסועד:</label><input type="text" id="n_${i}" value="סועד ${i+1}"></div>
-                        <div style="flex:1"><label>משולשים:</label><input type="number" id="sl_${i}" value="2" step="0.1" min="0"></div>
+                    <div style="display:flex; align-items:center; gap:15px; margin-bottom:15px;">
+                        <div style="flex:2"><label>שם הסועד:</label><input type="text" id="n_${i}" value="${personData ? personData.name : 'סועד ' + (i+1)}"></div>
+                        <div style="flex:1"><label>סך משולשים:</label><input type="number" id="sl_total_${i}" value="${personData ? personData.totalSlices : 2}" step="0.5" onchange="validateSlices(${i})"></div>
                     </div>
-                    
-                    <div style="margin-bottom:15px; border-bottom:1px solid #eee; padding-bottom:10px;">
-                        <input type="checkbox" id="plain_${i}" style="width:auto" onchange="togglePlain(${i})"> 
-                        <label for="plain_${i}" style="display:inline; color:var(--crust); font-weight:bold;">רוצה רק "בלי כלום" (מרגריטה)</label>
-                    </div>
-
-                    <div class="preference-container">
-                        <div class="pref-list"><h4>חייב ❤️</h4><div id="list_must_${i}"></div></div>
-                        <div class="pref-list"><h4>בסדר 👍</h4><div id="list_ok_${i}"></div></div>
-                        <div class="pref-list"><h4>שונא ❌</h4><div id="list_hate_${i}"></div></div>
-                    </div>
+                    <div id="pref_blocks_${i}"></div>
+                    <button class="btn btn-small" id="btn_add_${i}" onclick="addPreferenceBlock(${i})">+ הוסף פירוט למשולש</button>
+                    <div id="err_${i}" class="error-msg">הגעת למכסת המשולשים המוגדרת לסועד זה.</div>
                 </div>`;
             
-            config.availableToppings.forEach(t => {
-                const rName = `pref_${i}_${t}`;
-                
-                // Must column
-                document.getElementById(`list_must_${i}`).innerHTML += `
-                    <div class="pref-item">
-                        <input type="radio" name="${rName}" value="must" id="r_m_${i}_${t}" onchange="syncPref(${i},'${t}')"> ${t}
-                        <div id="box_ir_m_${i}_${t}" style="display:none;" class="slider-container">
-                            <input type="range" id="ir_m_${i}_${t}" min="1" max="5" value="3" style="width:50px" oninput="updateRangeLabel(${i},'${t}','m')">
-                            <span id="txt_ir_m_${i}_${t}" style="font-size:0.55rem">רגיל</span>
-                        </div>
-                    </div>`;
-                
-                // OK column (now with max limit)
-                document.getElementById(`list_ok_${i}`).innerHTML += `
-                    <div class="pref-item">
-                        <input type="radio" name="${rName}" value="ok" id="r_o_${i}_${t}" onchange="syncPref(${i},'${t}')"> ${t}
-                        <div id="box_ir_o_${i}_${t}" style="display:none;" class="slider-container">
-                            <input type="range" id="ir_o_${i}_${t}" min="1" max="5" value="3" style="width:50px" oninput="updateRangeLabel(${i},'${t}','o')">
-                            <span id="txt_ir_o_${i}_${t}" style="font-size:0.55rem; color:var(--secondary)">עד רגיל</span>
-                        </div>
-                    </div>`;
-                
-                // Hate column
-                document.getElementById(`list_hate_${i}`).innerHTML += `
-                    <div class="pref-item"><input type="radio" name="${rName}" value="hate" onchange="syncPref(${i},'${t}')"> ${t}</div>`;
-            });
+            if (isRestore && personData && personData.blocks) {
+                personData.blocks.forEach(bData => addPreferenceBlock(i, bData));
+            } else {
+                addPreferenceBlock(i); 
+            }
         }
+    }
+
+    function goToStep3() {
+        renderStep3();
         goToStep(3);
     }
 
-    function syncPref(i, t) {
-        const isMust = document.getElementById(`r_m_${i}_${t}`).checked;
-        const isOk = document.getElementById(`r_o_${i}_${t}`).checked;
+    function addPreferenceBlock(personIdx, bData = null) {
+        const container = document.getElementById(`pref_blocks_${personIdx}`);
+        const totalNeeded = parseFloat(document.getElementById(`sl_total_${personIdx}`).value) || 0;
         
-        document.getElementById(`box_ir_m_${i}_${t}`).style.display = isMust ? 'flex' : 'none';
-        document.getElementById(`box_ir_o_${i}_${t}`).style.display = isOk ? 'flex' : 'none';
+        const currentBlocks = container.querySelectorAll('.block-slices');
+        let currentTotal = 0;
+        currentBlocks.forEach(input => currentTotal += parseFloat(input.value) || 0);
+        
+        const remaining = Math.max(0, totalNeeded - currentTotal);
+        if (!bData && remaining <= 0) return; 
+
+        const blockCount = container.children.length;
+        const blockId = bData ? bData.id : `block_${personIdx}_${blockCount}`;
+        const defaultValue = bData ? bData.slices : Math.min(1, remaining);
+        
+        const blockHtml = `
+            <div class="preference-block" id="${blockId}">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#f0f0f0; padding:5px 10px; border-radius:8px;">
+                    <strong>קבוצת משולשים</strong>
+                    <div style="display:flex; align-items:center; gap:5px;">
+                        <label style="margin:0; font-size:0.8rem;">כמות:</label>
+                        <input type="number" class="block-slices" id="cnt_${blockId}" value="${defaultValue}" step="0.5" min="0" max="${totalNeeded}" style="width:60px; padding:5px;" onchange="validateSlices(${personIdx})">
+                    </div>
+                </div>
+                
+                <div style="margin-bottom:10px;">
+                    <input type="checkbox" id="plain_${blockId}" style="width:auto" ${bData && bData.isPlain ? 'checked' : ''} onchange="togglePlain('${blockId}')"> 
+                    <label for="plain_${blockId}" style="display:inline; color:var(--crust); font-size:0.9rem;">רק "בלי כלום"</label>
+                </div>
+
+                <div class="preference-container ${bData && bData.isPlain ? 'disabled-prefs' : ''}" id="container_${blockId}">
+                    <div class="pref-list"><h4>חייב ❤️</h4><div id="must_${blockId}"></div></div>
+                    <div class="pref-list"><h4>בסדר 👍</h4><div id="ok_${blockId}"></div></div>
+                    <div class="pref-list"><h4>שונא ❌</h4><div id="hate_${blockId}"></div></div>
+                </div>
+            </div>`;
+        
+        container.insertAdjacentHTML('beforeend', blockHtml);
+        
+        config.availableToppings.forEach(t => {
+            const rName = `pref_${blockId}_${t}`;
+            const p = bData && bData.prefs[t] ? bData.prefs[t] : null;
+            
+            document.getElementById(`must_${blockId}`).innerHTML += `
+                <div class="pref-item">
+                    <input type="radio" name="${rName}" value="must" id="r_m_${blockId}_${t}" ${p && p.type === 'must' ? 'checked' : ''} onchange="syncPref('${blockId}','${t}')"> ${t}
+                    <div id="box_ir_m_${blockId}_${t}" style="display:${p && p.type === 'must' ? 'flex' : 'none'};" class="slider-container">
+                        <input type="range" id="ir_m_${blockId}_${t}" min="1" max="5" value="${p && p.type === 'must' ? p.power : 3}" style="width:40px" oninput="updateRangeLabel('${blockId}','${t}','m')">
+                        <span id="txt_ir_m_${blockId}_${t}" style="font-size:0.5rem">${p && p.type === 'must' ? getLabel(p.power) : 'רגיל'}</span>
+                    </div>
+                </div>`;
+            
+            document.getElementById(`ok_${blockId}`).innerHTML += `
+                <div class="pref-item">
+                    <input type="radio" name="${rName}" value="ok" id="r_o_${blockId}_${t}" ${p && p.type === 'ok' ? 'checked' : ''} onchange="syncPref('${blockId}','${t}')"> ${t}
+                    <div id="box_ir_o_${blockId}_${t}" style="display:${p && p.type === 'ok' ? 'flex' : 'none'};" class="slider-container">
+                        <input type="range" id="ir_o_${blockId}_${t}" min="1" max="5" value="${p && p.type === 'ok' ? p.power : 3}" style="width:40px" oninput="updateRangeLabel('${blockId}','${t}','o')">
+                        <span id="txt_ir_o_${blockId}_${t}" style="font-size:0.5rem; color:var(--secondary)">${p && p.type === 'ok' ? getLabel(p.power) : 'נגיעה'}</span>
+                    </div>
+                </div>`;
+            
+            document.getElementById(`hate_${blockId}`).innerHTML += `
+                <div class="pref-item"><input type="radio" name="${rName}" value="hate" ${p && p.type === 'hate' ? 'checked' : ''} onchange="syncPref('${blockId}','${t}')"> ${t}</div>`;
+        });
+        
+        validateSlices(personIdx);
     }
 
-    function updateRangeLabel(i, t, type) {
-        const v = document.getElementById(`ir_${type}_${i}_${t}`).value;
+    function getLabel(v) {
         const labels = { '1':'נגיעה','2':'מעט','3':'רגיל','4':'נדיב','5':'אקסטרה' };
-        const prefix = type === 'o' ? 'עד ' : '';
-        document.getElementById(`txt_ir_${type}_${i}_${t}`).innerText = prefix + labels[v];
+        return labels[v] || 'רגיל';
     }
 
-    function togglePlain(i) {
-        const isPlain = document.getElementById(`plain_${i}`).checked;
-        const card = document.getElementById(`card_${i}`);
-        const radios = card.querySelectorAll(`input[type="radio"]`);
+    function checkAddButton(personIdx) {
+        const totalNeeded = parseFloat(document.getElementById(`sl_total_${personIdx}`).value) || 0;
+        const currentBlocks = document.getElementById(`pref_blocks_${personIdx}`).querySelectorAll('.block-slices');
+        let currentTotal = 0;
+        currentBlocks.forEach(input => currentTotal += parseFloat(input.value) || 0);
         
-        if (isPlain) {
-            card.classList.add('disabled-prefs');
-            radios.forEach(r => {
-                r.checked = false;
-                r.disabled = true;
-            });
-            card.querySelectorAll('.slider-container').forEach(s => s.style.display = 'none');
-        } else {
-            card.classList.remove('disabled-prefs');
-            radios.forEach(r => r.disabled = false);
+        const btn = document.getElementById(`btn_add_${personIdx}`);
+        const errMsg = document.getElementById(`err_${personIdx}`);
+        
+        if (btn) {
+            const isFull = currentTotal >= totalNeeded;
+            btn.disabled = isFull;
+            btn.style.opacity = isFull ? "0.5" : "1";
+            if (errMsg) errMsg.style.display = isFull ? "block" : "none";
         }
+    }
+
+    function syncPref(blockId, t) {
+        const isMust = document.getElementById(`r_m_${blockId}_${t}`).checked;
+        const isOk = document.getElementById(`r_o_${blockId}_${t}`).checked;
+        document.getElementById(`box_ir_m_${blockId}_${t}`).style.display = isMust ? 'flex' : 'none';
+        document.getElementById(`box_ir_o_${blockId}_${t}`).style.display = isOk ? 'flex' : 'none';
+        saveData();
+    }
+
+    function updateRangeLabel(blockId, t, type) {
+        const v = document.getElementById(`ir_${type}_${blockId}_${t}`).value;
+        document.getElementById(`txt_ir_${type}_${blockId}_${t}`).innerText = getLabel(v);
+        saveData();
+    }
+
+    function togglePlain(blockId) {
+        const isPlain = document.getElementById(`plain_${blockId}`).checked;
+        const cont = document.getElementById(`container_${blockId}`);
+        cont.classList.toggle('disabled-prefs', isPlain);
+        saveData();
     }
 
     function generateReport() {
-        config.people = [];
+        saveData();
+        config.processedPeople = [];
+        let globalHateCounts = {};
+        let globalLikeCounts = {};
+        config.availableToppings.forEach(t => { globalHateCounts[t] = 0; globalLikeCounts[t] = 0; });
+
         for (let i = 0; i < config.numPeople; i++) {
-            const isPlain = document.getElementById(`plain_${i}`).checked;
-            let finalLikes = [];
+            const personName = document.getElementById(`n_${i}`).value || `סועד ${i+1}`;
+            const blocksCont = document.getElementById(`pref_blocks_${i}`);
+            if (!blocksCont) continue;
+            const blocks = blocksCont.children;
             
-            if (!isPlain) {
-                let must = [];
-                let ok = [];
-                config.availableToppings.forEach(t => {
-                    const radios = document.getElementsByName(`pref_${i}_${t}`);
-                    let val = "";
-                    radios.forEach(r => { if(r.checked) val = r.value; });
-                    
-                    if (val === 'must') {
-                        must.push({ name: t, power: parseFloat(document.getElementById(`ir_m_${i}_${t}`).value) });
-                    } else if (val === 'ok') {
-                        // Max limit selected by user
-                        const maxPower = parseFloat(document.getElementById(`ir_o_${i}_${t}`).value);
-                        // Random value between 1 and maxPower (inclusive)
-                        const randomPower = Math.floor(Math.random() * maxPower) + 1;
-                        ok.push({ name: t, power: randomPower });
-                    }
-                });
+            for (let b = 0; b < blocks.length; b++) {
+                const blockId = blocks[b].id;
+                const isPlain = document.getElementById(`plain_${blockId}`).checked;
+                const sliceCount = parseFloat(document.getElementById(`cnt_${blockId}`).value) || 0;
+                if (sliceCount <= 0) continue;
+
+                let finalLikes = [];
+                let localHates = [];
                 
-                finalLikes = [...must];
-                // Fill up to 4 toppings if possible using OK choices
-                if (finalLikes.length < 4 && ok.length > 0) {
-                    const needed = 4 - finalLikes.length;
-                    const shuffledOk = ok.sort(() => 0.5 - Math.random());
-                    finalLikes.push(...shuffledOk.slice(0, needed));
+                if (!isPlain) {
+                    let must = [];
+                    let ok = [];
+                    config.availableToppings.forEach(t => {
+                        const radios = document.getElementsByName(`pref_${blockId}_${t}`);
+                        let val = "";
+                        radios.forEach(r => { if(r.checked) val = r.value; });
+                        
+                        if (val === 'must') {
+                            must.push({ name: t, power: parseFloat(document.getElementById(`ir_m_${blockId}_${t}`).value) });
+                            globalLikeCounts[t]++;
+                        } else if (val === 'ok') {
+                            const maxP = parseFloat(document.getElementById(`ir_o_${blockId}_${t}`).value);
+                            ok.push({ name: t, power: Math.floor(Math.random() * maxP) + 1 });
+                            globalLikeCounts[t] += 0.5;
+                        } else if (val === 'hate') {
+                            localHates.push(t);
+                            globalHateCounts[t]++;
+                        }
+                    });
+                    
+                    finalLikes = [...must];
+                    if (finalLikes.length < 4 && ok.length > 0) {
+                        const needed = 4 - finalLikes.length;
+                        finalLikes.push(...ok.sort(() => 0.5 - Math.random()).slice(0, needed));
+                    }
                 }
+                
+                config.processedPeople.push({
+                    name: personName,
+                    count: sliceCount,
+                    likes: finalLikes,
+                    hates: localHates,
+                    isPlain: isPlain
+                });
             }
-            config.people.push({
-                name: document.getElementById(`n_${i}`).value || `סועד ${i+1}`,
-                count: parseFloat(document.getElementById(`sl_${i}`).value) || 0,
-                likes: finalLikes,
-                isPlain: isPlain
-            });
         }
+
+        const sortedForReserve = [...config.availableToppings].sort((a, b) => {
+            if (globalHateCounts[a] !== globalHateCounts[b]) return globalHateCounts[a] - globalHateCounts[b];
+            return globalLikeCounts[b] - globalLikeCounts[a];
+        });
+        config.reserveToppings = sortedForReserve.slice(0, 2).map(t => ({ name: t, power: 3 }));
+
         drawReport();
         goToStep(4);
+    }
+
+    function resetToStep1() {
+        if(confirm("בטוח שברצונך להתחיל מחדש? (הנתונים לא יימחקו מהזיכרון)")) {
+            goToStep(1);
+        }
     }
 
     function drawReport() {
         const cont = document.getElementById('reportContent');
         cont.innerHTML = '';
         let slicePool = [];
-        config.people.forEach(p => {
+        
+        config.processedPeople.forEach(p => {
             let tempCount = p.count;
             while(tempCount > 0) {
                 let portion = tempCount >= 1 ? 1 : tempCount;
-                slicePool.push({ owner: p.name, toppings: p.likes, isPlain: p.isPlain, size: portion.toFixed(1) });
+                slicePool.push({ owner: p.name, toppings: p.likes, isPlain: p.isPlain, size: portion.toFixed(1), hates: p.hates });
                 tempCount -= portion;
             }
         });
@@ -471,30 +708,46 @@
 
             for (let si = 0; si < config.slicesPerPizza; si++) {
                 const poolIdx = pi * config.slicesPerPizza + si;
-                const data = slicePool[poolIdx] || { owner: "רזרבה", toppings: [], isPlain: true, size: 1 };
+                let data = slicePool[poolIdx];
+                let currentToppings = [];
+                let label = "";
+
+                if (!data) {
+                    label = "רזרבה";
+                    currentToppings = config.reserveToppings;
+                    data = { owner: "רזרבה", size: 1, isPlain: false };
+                } else if (data.isPlain) {
+                    label = data.owner;
+                } else {
+                    label = data.owner;
+                    currentToppings = data.toppings;
+                    if (currentToppings.length === 0) {
+                        currentToppings = config.reserveToppings.filter(t => !data.hates.includes(t.name));
+                    }
+                }
+
                 const line = document.createElement('div');
                 line.className = 'slice-line';
                 line.style.transform = `rotate(${si * (360/config.slicesPerPizza)}deg)`;
                 base.appendChild(line);
 
-                if (!data.isPlain) {
-                    data.toppings.forEach(t => {
-                        const density = Math.floor(t.power * 2.5);
-                        for(let k=0; k < density; k++) {
-                            const icon = document.createElement('div');
-                            icon.className = 'topping-icon';
-                            icon.innerText = emojis[t.name];
-                            const randAngle = (si * (360/config.slicesPerPizza) + 5 + Math.random() * ((360/config.slicesPerPizza) - 10)) * Math.PI / 180;
-                            const dist = 30 + Math.random() * 100;
-                            icon.style.left = `${50 + dist * Math.cos(randAngle)}%`;
-                            icon.style.top = `${50 + dist * Math.sin(randAngle)}%`;
-                            base.appendChild(icon);
-                        }
-                    });
-                }
+                currentToppings.forEach(t => {
+                    const density = Math.floor(t.power * 2.5);
+                    for(let k=0; k < density; k++) {
+                        const icon = document.createElement('div');
+                        icon.className = 'topping-icon';
+                        icon.innerText = emojis[t.name];
+                        const randAngle = (si * (360/config.slicesPerPizza) + 5 + Math.random() * ((360/config.slicesPerPizza) - 10)) * Math.PI / 180;
+                        const radialDist = 30 + Math.random() * 100;
+                        icon.style.left = `${50 + radialDist * Math.cos(randAngle)}%`;
+                        icon.style.top = `${50 + radialDist * Math.sin(randAngle)}%`;
+                        base.appendChild(icon);
+                    }
+                });
+
                 const row = table.insertRow();
-                const toppingList = data.isPlain ? "מרגריטה (בלי כלום)" : data.toppings.map(t => emojis[t.name] + " " + t.name).join(', ');
-                row.innerHTML = `<td>${si+1}</td><td><strong>${data.owner}</strong> <small>(${data.size})</small></td><td>${toppingList}</td>`;
+                const toppingList = (data.isPlain && label !== "רזרבה") ? "מרגריטה" : (currentToppings.length > 0 ? currentToppings.map(t => emojis[t.name] + " " + t.name).join(', ') : "בלי כלום");
+                row.innerHTML = `<td>${si+1}</td><td><strong>${label}</strong> <small>(${data.size})</small></td><td>${toppingList}</td>`;
             }
         }
     }
