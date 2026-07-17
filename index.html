@@ -658,14 +658,15 @@
       return { allocation: raw, scaled: raw, totalSlices };
     }
 
+    // Each topping's desirability is counted independently per person (rating
+    // out of the 5-star max), not split as a share of the person's total —
+    // since toppings can share a slice, someone who rates three toppings 5
+    // stars wants close to their full slice count of each one, not a third of
+    // each. That's why demand can add up past what the pizzas can physically
+    // hold: it reflects everyone's real wish-list, not a forced 100% split.
     state.people.forEach(p => {
-      const sumRatings = state.toppings.reduce((s,t) => s + effectiveRating(p,t), 0);
       const desired = p.desiredSlices || 0;
-      if(sumRatings === 0){
-        state.toppings.forEach(t => raw[t] += desired / state.toppings.length);
-      } else {
-        state.toppings.forEach(t => raw[t] += desired * effectiveRating(p,t) / sumRatings);
-      }
+      state.toppings.forEach(t => raw[t] += desired * (effectiveRating(p,t) / 5));
     });
 
     // allocation: how much of each topping people actually want, shown as-is
