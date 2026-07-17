@@ -668,32 +668,21 @@
       }
     });
 
+    // allocation: how much of each topping people actually want, shown as-is
+    // in the tables. It's not capped to totalSlices and the percentages can
+    // add up to more than 100% — several toppings can share the same slice,
+    // so the pool of "topping demand" isn't limited to one topping per slice.
+    const allocation = {};
+    state.toppings.forEach(t => allocation[t] = Math.round(raw[t]));
+
+    // scaled: raw proportionally fit to totalSlices, used only to lay out the
+    // pizza graphic, which is a physical pool that must tile exactly.
     const sumRaw = Object.values(raw).reduce((a,b) => a+b, 0);
     const scale = sumRaw > 0 ? totalSlices / sumRaw : 0;
     const scaled = {};
     state.toppings.forEach(t => scaled[t] = raw[t] * scale);
 
-    // largest remainder rounding
-    const floors = {};
-    const remainders = [];
-    state.toppings.forEach(t => {
-      floors[t] = Math.floor(scaled[t]);
-      remainders.push([t, scaled[t] - floors[t]]);
-    });
-    let assigned = Object.values(floors).reduce((a,b) => a+b, 0);
-    let remaining = totalSlices - assigned;
-    remainders.sort((a,b) => b[1] - a[1]);
-    for(let i = 0; i < remaining && i < remainders.length; i++){
-      floors[remainders[i][0]] += 1;
-    }
-    // if still remaining left over (shouldn't happen normally) dump into biggest topping
-    remaining = totalSlices - Object.values(floors).reduce((a,b) => a+b, 0);
-    if(remaining > 0 && state.toppings.length > 0){
-      const sorted = [...state.toppings].sort((a,b) => floors[b]-floors[a]);
-      floors[sorted[0]] += remaining;
-    }
-
-    return { allocation: floors, scaled, totalSlices };
+    return { allocation, scaled, totalSlices };
   }
 
   // topping "how much to put on" tiers, from the average rating it got (1-5).
