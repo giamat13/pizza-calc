@@ -395,6 +395,7 @@
     state.people.forEach(p => p.ratings[name] = 3);
     renderToppings();
     renderPeople();
+    saveState();
   }
 
   function removeTopping(name){
@@ -402,6 +403,7 @@
     state.people.forEach(p => delete p.ratings[name]);
     renderToppings();
     renderPeople();
+    saveState();
   }
 
   addToppingBtn.onclick = () => {
@@ -426,6 +428,7 @@
     const suggested = Math.max(1, Math.ceil(totalDesired / state.slicesPerPizza));
     state.pizzaCount = suggested;
     pizzaCountInput.value = suggested;
+    saveState();
   };
 
   // ---------- people ----------
@@ -441,7 +444,7 @@
       nameInput.type = 'text';
       nameInput.placeholder = `אורח ${idx+1}`;
       nameInput.value = p.name;
-      nameInput.oninput = () => { p.name = nameInput.value; };
+      nameInput.oninput = () => { p.name = nameInput.value; saveState(); };
       topLine.appendChild(nameInput);
 
       if(state.people.length > 1){
@@ -452,6 +455,7 @@
         rmBtn.onclick = () => {
           state.people = state.people.filter(x => x.id !== p.id);
           renderPeople();
+          saveState();
         };
         topLine.appendChild(rmBtn);
       }
@@ -465,7 +469,7 @@
       slicesInput.min = '0';
       slicesInput.style.width = '60px';
       slicesInput.value = p.desiredSlices;
-      slicesInput.onchange = () => { p.desiredSlices = Math.max(0, parseInt(slicesInput.value,10) || 0); };
+      slicesInput.onchange = () => { p.desiredSlices = Math.max(0, parseInt(slicesInput.value,10) || 0); saveState(); };
       slicesLine.appendChild(slicesInput);
       card.appendChild(slicesLine);
 
@@ -492,7 +496,7 @@
           starBtn.type = 'button';
           starBtn.textContent = '★';
           if(s <= p.ratings[t]) starBtn.classList.add('filled');
-          starBtn.onclick = () => { p.ratings[t] = s; renderStars(stars, p.ratings[t]); };
+          starBtn.onclick = () => { p.ratings[t] = s; renderStars(stars, p.ratings[t]); saveState(); };
           stars.appendChild(starBtn);
         }
         row.appendChild(stars);
@@ -512,6 +516,7 @@
   addPersonBtn.onclick = () => {
     state.people.push(newPerson(''));
     renderPeople();
+    saveState();
   };
 
   // ---------- calculation ----------
@@ -699,9 +704,53 @@
     resultsSection.scrollIntoView({ behavior:'smooth', block:'start' });
   };
 
+  // ---------- storage ----------
+  const STORAGE_KEY = 'pizzaCalcState_v2';
+
+  function saveState(){
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch(e){
+      console.warn('localStorage full or disabled');
+    }
+  }
+
+  function loadState(){
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if(saved){
+        const loaded = JSON.parse(saved);
+        if(loaded.toppings) state.toppings = loaded.toppings;
+        if(loaded.slicesPerPizza) state.slicesPerPizza = loaded.slicesPerPizza;
+        if(loaded.pizzaCount) state.pizzaCount = loaded.pizzaCount;
+        if(loaded.people) state.people = loaded.people;
+        // validate people have all current toppings
+        state.people.forEach(p => {
+          state.toppings.forEach(t => {
+            if(!(t in p.ratings)) p.ratings[t] = 3;
+          });
+        });
+      }
+    } catch(e){
+      console.warn('Failed to load state', e);
+    }
+  }
+
   // ---------- init ----------
+  loadState();
+  slicesPerPizzaSel.value = state.slicesPerPizza;
+  pizzaCountInput.value = state.pizzaCount;
+  
   renderToppings();
   renderPeople();
+
+  // auto-save on every change
+  const autoSave = () => saveState();
+  slicesPerPizzaSel.addEventListener('change', autoSave);
+  pizzaCountInput.addEventListener('change', autoSave);
+  addToppingBtn.addEventListener('click', autoSave);
+  document.addEventListener('change', autoSave);
+  document.addEventListener('input', autoSave);
 })();
 </script>
 
