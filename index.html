@@ -206,10 +206,25 @@
     font-weight:600;
     color:#fff;
   }
+  .badge.must{background:var(--tomato-dark);}
   .badge.lots{background:var(--tomato);}
   .badge.medium{background:var(--gold); color:var(--ink);}
   .badge.little{background:var(--basil);}
+  .badge.minimal{background:#ddd0b3; color:#57503f;}
   .badge.none{background:#c9c0b1; color:#57503f;}
+  .btn-indiff{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    font-size:0.72rem;
+    padding:4px 9px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .btn-indiff:hover{border-color:var(--basil);}
+  .btn-indiff.active{background:var(--basil); color:#fff; border-color:var(--basil);}
+  .person-category-select{min-width:110px;}
+  .shared-note{font-size:0.78rem; color:var(--ink-soft);}
   .legend{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px;}
   .legend-item{display:flex; align-items:center; gap:6px; font-size:0.85rem;}
   .swatch{width:13px; height:13px; border-radius:4px; display:inline-block;}
@@ -275,6 +290,16 @@
   </section>
 
   <section class="card">
+    <h2>קטגוריות אורחים</h2>
+    <p class="hint">למשל מבוגר / ילד — אפשר להוסיף עוד (נוער, טבעוני וכו'). מי שילחץ "לא משנה לי" על תוספת יקבל אוטומטית דירוג דומה לפי מה שאחרים באותה קטגוריה דירגו.</p>
+    <div class="add-topping-row">
+      <input type="text" id="newCategoryInput" placeholder="למשל: נוער">
+      <button class="btn-primary" id="addCategoryBtn">הוספה</button>
+    </div>
+    <div class="chips" id="categoriesChips"></div>
+  </section>
+
+  <section class="card">
     <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:4px;">
       <div>
         <h2>מי בא?</h2>
@@ -310,7 +335,7 @@
 
     <details class="howto">
       <summary>איך זה מחושב?</summary>
-      <p>כל אורח "מפזר" את מספר הפרוסות שהוא רוצה בין התוספות, לפי הדירוג שנתן לכל אחת (דירוג גבוה יותר = יותר פרוסות מאותה תוספת). המחשבון מסכום את זה על פני כל האורחים, ואז מצמיד את הסכום למספר הפרוסות שבאמת יש (לפי כמות הפיצות). התוצאה מעוגלת למספרים שלמים כך שהסכום מדויק. ההדמיה מסדרת את הפרוסות ברצף על פני הפיצות, כדי שכל פיצה תהיה ברובה תוספת אחת או שתיים.</p>
+      <p>כל אורח "מפזר" את מספר הפרוסות שהוא רוצה בין התוספות, לפי הדירוג שנתן לכל אחת (דירוג גבוה יותר = יותר פרוסות מאותה תוספת). מי שסימן "לא משנה לי" על תוספת מסוימת מקבל אוטומטית דירוג משוער, לפי הממוצע של אחרים מאותה קטגוריה (למשל מבוגר/ילד). המחשבון מסכום את הכול, מצמיד את הסכום למספר הפרוסות שבאמת יש (לפי כמות הפיצות), ומעגל למספרים שלמים כך שהסכום מדויק. הרמה שמוצגת לכל תוספת (חובה מוחלטת / הרבה / בינוני / מעט / כמעט לא / בכלל לא) מבוססת על הדירוג הממוצע שהתוספת קיבלה — למשל תוספת שכולם נתנו לה 5 כוכבים תסומן "חובה מוחלטת". בהדמיה ובטבלה המדויקת, פרוסה שנופלת בדיוק על הגבול בין שתי תוספות מוצגת עם שני הצבעים, כלומר יכולה להכיל כמה תוספות באותה פרוסה — בדיוק כמו בפיצה אמיתית.</p>
     </details>
   </section>
 </div>
@@ -328,6 +353,7 @@
 
   let state = {
     toppings: ['מרגריטה','פטריות','פפרוני'],
+    categories: ['מבוגר','ילד'],
     slicesPerPizza: 8,
     pizzaCount: 2,
     people: []
@@ -344,7 +370,7 @@
   function newPerson(name){
     const ratings = {};
     state.toppings.forEach(t => ratings[t] = 3);
-    return { id: uid(), name: name || '', ratings, desiredSlices: defaultDesired() };
+    return { id: uid(), name: name || '', category: state.categories[0] || '', ratings, desiredSlices: defaultDesired() };
   }
 
   // start with two guests
@@ -355,6 +381,9 @@
   const toppingsChips = document.getElementById('toppingsChips');
   const newToppingInput = document.getElementById('newToppingInput');
   const addToppingBtn = document.getElementById('addToppingBtn');
+  const categoriesChips = document.getElementById('categoriesChips');
+  const newCategoryInput = document.getElementById('newCategoryInput');
+  const addCategoryBtn = document.getElementById('addCategoryBtn');
   const slicesPerPizzaSel = document.getElementById('slicesPerPizza');
   const pizzaCountInput = document.getElementById('pizzaCount');
   const suggestPizzasBtn = document.getElementById('suggestPizzasBtn');
@@ -415,6 +444,54 @@
     if(e.key === 'Enter'){ e.preventDefault(); addToppingBtn.click(); }
   });
 
+  // ---------- guest categories ----------
+  function renderCategories(){
+    categoriesChips.innerHTML = '';
+    if(state.categories.length === 0){
+      categoriesChips.innerHTML = '<div class="empty-note">אין קטגוריות. הוסיפו אחת למעלה.</div>';
+      return;
+    }
+    state.categories.forEach(c => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `<span>${escapeHtml(c)}</span>`;
+      const rm = document.createElement('button');
+      rm.textContent = '×';
+      rm.title = 'הסרה';
+      rm.onclick = () => removeCategory(c);
+      chip.appendChild(rm);
+      categoriesChips.appendChild(chip);
+    });
+  }
+
+  function addCategory(name){
+    name = name.trim();
+    if(!name) return;
+    if(state.categories.includes(name)) return;
+    state.categories.push(name);
+    renderCategories();
+    renderPeople();
+    saveState();
+  }
+
+  function removeCategory(name){
+    state.categories = state.categories.filter(c => c !== name);
+    const fallback = state.categories[0] || '';
+    state.people.forEach(p => { if(p.category === name) p.category = fallback; });
+    renderCategories();
+    renderPeople();
+    saveState();
+  }
+
+  addCategoryBtn.onclick = () => {
+    addCategory(newCategoryInput.value);
+    newCategoryInput.value = '';
+    newCategoryInput.focus();
+  };
+  newCategoryInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); addCategoryBtn.click(); }
+  });
+
   // ---------- pizza settings ----------
   slicesPerPizzaSel.onchange = () => { state.slicesPerPizza = parseInt(slicesPerPizzaSel.value, 10); };
   pizzaCountInput.onchange = () => {
@@ -461,6 +538,26 @@
       }
       card.appendChild(topLine);
 
+      const categoryLine = document.createElement('div');
+      categoryLine.className = 'slices-line';
+      if(state.categories.length === 0){
+        categoryLine.innerHTML = `<span>קטגוריה: אין קטגוריות עדיין.</span>`;
+      } else {
+        categoryLine.innerHTML = `<span>קטגוריה:</span>`;
+        const categorySelect = document.createElement('select');
+        categorySelect.className = 'person-category-select';
+        state.categories.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          if(p.category === c) opt.selected = true;
+          categorySelect.appendChild(opt);
+        });
+        categorySelect.onchange = () => { p.category = categorySelect.value; saveState(); };
+        categoryLine.appendChild(categorySelect);
+      }
+      card.appendChild(categoryLine);
+
       const slicesLine = document.createElement('div');
       slicesLine.className = 'slices-line';
       slicesLine.innerHTML = `<span>כמה פרוסות בערך:</span>`;
@@ -489,27 +586,40 @@
         label.textContent = t;
         row.appendChild(label);
 
+        const controls = document.createElement('div');
+        controls.style.display = 'flex';
+        controls.style.alignItems = 'center';
+        controls.style.gap = '8px';
+
         const stars = document.createElement('div');
         stars.className = 'stars';
         for(let s = 1; s <= 5; s++){
           const starBtn = document.createElement('button');
           starBtn.type = 'button';
           starBtn.textContent = '★';
-          if(s <= p.ratings[t]) starBtn.classList.add('filled');
-          starBtn.onclick = () => { p.ratings[t] = s; renderStars(stars, p.ratings[t]); saveState(); };
+          if(typeof p.ratings[t] === 'number' && s <= p.ratings[t]) starBtn.classList.add('filled');
+          starBtn.onclick = () => { p.ratings[t] = s; renderPeople(); saveState(); };
           stars.appendChild(starBtn);
         }
-        row.appendChild(stars);
+        controls.appendChild(stars);
+
+        const indiffBtn = document.createElement('button');
+        indiffBtn.type = 'button';
+        indiffBtn.className = 'btn-indiff' + (p.ratings[t] === 'any' ? ' active' : '');
+        indiffBtn.textContent = 'לא משנה לי';
+        indiffBtn.title = 'המחשבון ישלים דירוג דומה, לפי הקטגוריה שלך';
+        indiffBtn.onclick = () => {
+          p.ratings[t] = (p.ratings[t] === 'any') ? 3 : 'any';
+          renderPeople();
+          saveState();
+        };
+        controls.appendChild(indiffBtn);
+
+        row.appendChild(controls);
         card.appendChild(row);
       });
 
       peopleContainer.appendChild(card);
-    });
-  }
-
-  function renderStars(container, rating){
-    Array.from(container.children).forEach((btn, i) => {
-      btn.classList.toggle('filled', i < rating);
     });
   }
 
@@ -520,22 +630,42 @@
   };
 
   // ---------- calculation ----------
+  function effectiveRating(person, topping){
+    const r = person.ratings[topping];
+    if(typeof r === 'number') return r;
+    // 'any' (doesn't matter) or missing: fall back to peers in the same category
+    const peerRatings = state.people
+      .filter(p => p.id !== person.id && p.category === person.category)
+      .map(p => p.ratings[topping])
+      .filter(v => typeof v === 'number');
+    if(peerRatings.length > 0){
+      return peerRatings.reduce((a,b) => a+b, 0) / peerRatings.length;
+    }
+    const allRatings = state.people
+      .map(p => p.ratings[topping])
+      .filter(v => typeof v === 'number');
+    if(allRatings.length > 0){
+      return allRatings.reduce((a,b) => a+b, 0) / allRatings.length;
+    }
+    return 3;
+  }
+
   function computeAllocation(){
     const totalSlices = state.slicesPerPizza * state.pizzaCount;
     const raw = {};
     state.toppings.forEach(t => raw[t] = 0);
 
     if(state.toppings.length === 0 || totalSlices === 0){
-      return { allocation: raw, totalSlices };
+      return { allocation: raw, scaled: raw, totalSlices };
     }
 
     state.people.forEach(p => {
-      const sumRatings = state.toppings.reduce((s,t) => s + (p.ratings[t] || 0), 0);
+      const sumRatings = state.toppings.reduce((s,t) => s + effectiveRating(p,t), 0);
       const desired = p.desiredSlices || 0;
       if(sumRatings === 0){
         state.toppings.forEach(t => raw[t] += desired / state.toppings.length);
       } else {
-        state.toppings.forEach(t => raw[t] += desired * (p.ratings[t] || 0) / sumRatings);
+        state.toppings.forEach(t => raw[t] += desired * effectiveRating(p,t) / sumRatings);
       }
     });
 
@@ -564,26 +694,44 @@
       floors[sorted[0]] += remaining;
     }
 
-    return { allocation: floors, totalSlices };
+    return { allocation: floors, scaled, totalSlices };
+  }
+
+  // topping "how much to put on" tiers, from the average rating it got (1-5).
+  // more than just lots/medium/little/none: a topping everyone rated 5 stars
+  // stands out as its own top tier, and there's a tier below "little" too.
+  const TIERS = [
+    { key:'must',    min:4.5, label:'חובה מוחלטת' },
+    { key:'lots',    min:3.5, label:'הרבה' },
+    { key:'medium',  min:2.5, label:'בינוני' },
+    { key:'little',  min:1.5, label:'מעט' },
+    { key:'minimal', min:-Infinity, label:'כמעט לא' }
+  ];
+  const LABELS = { none:'בכלל לא' };
+  TIERS.forEach(tier => { LABELS[tier.key] = tier.label; });
+
+  function averageRatings(){
+    const avg = {};
+    state.toppings.forEach(t => {
+      const vals = state.people.map(p => effectiveRating(p,t));
+      avg[t] = vals.length ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+    });
+    return avg;
   }
 
   function categorize(allocation){
-    const entries = Object.entries(allocation).filter(([,c]) => c > 0).sort((a,b) => b[1]-a[1]);
+    const avg = averageRatings();
     const result = {};
-    state.toppings.forEach(t => result[t] = allocation[t] > 0 ? 'medium' : 'none');
-    const n = entries.length;
-    if(n > 0){
-      const third = Math.max(1, Math.ceil(n/3));
-      entries.forEach(([t], idx) => {
-        if(idx < third) result[t] = 'lots';
-        else if(idx >= n - third) result[t] = 'little';
-        else result[t] = 'medium';
-      });
-    }
+    state.toppings.forEach(t => {
+      if(!allocation[t] || allocation[t] <= 0){
+        result[t] = 'none';
+        return;
+      }
+      const tier = TIERS.find(tr => avg[t] >= tr.min) || TIERS[TIERS.length - 1];
+      result[t] = tier.key;
+    });
     return result;
   }
-
-  const LABELS = { lots:'הרבה', medium:'בינוני', little:'מעט', none:'לא' };
 
   function renderQualTable(allocation, cats){
     qualTable.innerHTML = '';
@@ -599,14 +747,33 @@
     });
   }
 
-  function renderQuantTable(allocation, totalSlices){
+  function renderQuantTable(allocation, totalSlices, tape){
     quantTable.innerHTML = '';
-    quantTable.innerHTML += `<tr><th>תוספת</th><th>פרוסות</th><th>אחוז</th></tr>`;
+    quantTable.innerHTML += `<tr><th>תוספת</th><th>פרוסות</th><th>אחוז</th><th>פרוסה משותפת</th></tr>`;
+    if(state.toppings.length === 0){
+      quantTable.innerHTML += '<tr><td colspan="4" class="empty-note">אין תוספות להצגה.</td></tr>';
+      return;
+    }
+    const shared = {};
+    state.toppings.forEach(t => shared[t] = []);
+    (tape || []).forEach((entries, idx) => {
+      if(entries.length > 1){
+        const pizzaNum = Math.floor(idx / state.slicesPerPizza) + 1;
+        const sliceNum = (idx % state.slicesPerPizza) + 1;
+        entries.forEach(e => {
+          const partners = entries.filter(o => o.topping !== e.topping).map(o => o.topping);
+          if(partners.length){
+            shared[e.topping].push(`פיצה ${pizzaNum} פרוסה ${sliceNum} (עם ${partners.join(', ')})`);
+          }
+        });
+      }
+    });
     state.toppings.forEach(t => {
       const count = allocation[t] || 0;
       const pct = totalSlices > 0 ? Math.round((count/totalSlices)*100) : 0;
+      const sharedText = shared[t].length ? shared[t].join('; ') : '—';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(t)}</td><td class="num">${count}</td><td class="num">${pct}%</td>`;
+      tr.innerHTML = `<td>${escapeHtml(t)}</td><td class="num">${count}</td><td class="num">${pct}%</td><td class="shared-note">${escapeHtml(sharedText)}</td>`;
       quantTable.appendChild(tr);
     });
   }
@@ -634,16 +801,60 @@
     return `M ${cx} ${cy} L ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)} Z`;
   }
 
-  function buildPizzaSvg(sliceToppingsForThisPizza){
+  // Builds a continuous "tape" of length totalSlices out of each topping's exact
+  // (unrounded) share, then cuts it into physical slices. A slice whose boundary
+  // falls mid-topping ends up with two (or more) entries, i.e. several toppings
+  // sharing that one slice — instead of forcing every slice to a single topping.
+  function buildSliceTape(scaled, totalSlices){
+    const active = state.toppings.filter(t => (scaled[t] || 0) > 0);
+    const sorted = [...active].sort((a,b) => (scaled[b]||0) - (scaled[a]||0));
+    const segments = [];
+    let cum = 0;
+    sorted.forEach(t => {
+      const start = cum;
+      const end = cum + scaled[t];
+      segments.push({ topping: t, start, end });
+      cum = end;
+    });
+    if(segments.length){
+      segments[segments.length - 1].end = totalSlices;
+    }
+
+    const slices = [];
+    for(let i = 0; i < totalSlices; i++){
+      const sliceStart = i, sliceEnd = i + 1;
+      const entries = [];
+      segments.forEach(seg => {
+        const overlap = Math.min(seg.end, sliceEnd) - Math.max(seg.start, sliceStart);
+        if(overlap > 1e-6) entries.push({ topping: seg.topping, weight: overlap });
+      });
+      const sum = entries.reduce((s,e) => s + e.weight, 0);
+      if(sum > 0) entries.forEach(e => e.weight = e.weight / sum);
+      slices.push(entries);
+    }
+    return slices;
+  }
+
+  function buildPizzaSvg(sliceEntriesForThisPizza, colorMap){
     const size = 190, cx = 95, cy = 95, r = 82;
-    const n = sliceToppingsForThisPizza.length;
+    const n = sliceEntriesForThisPizza.length;
     const angleStep = 360 / n;
     let paths = '';
-    sliceToppingsForThisPizza.forEach((topping, i) => {
-      const startAngle = i * angleStep;
-      const endAngle = (i+1) * angleStep;
-      const color = topping.color;
-      paths += `<path d="${wedgePath(cx,cy,r,startAngle,endAngle)}" fill="${color}" stroke="${'#FFFBF3'}" stroke-width="2"><title>${escapeHtml(topping.name)}</title></path>`;
+    sliceEntriesForThisPizza.forEach((entries, i) => {
+      const sliceStart = i * angleStep;
+      if(!entries || entries.length === 0){
+        paths += `<path d="${wedgePath(cx,cy,r,sliceStart,sliceStart+angleStep)}" fill="#e9dcc4" stroke="#FFFBF3" stroke-width="2"><title>ללא</title></path>`;
+        return;
+      }
+      const title = entries.map(e => e.topping).join(' + ');
+      let cursor = sliceStart;
+      entries.forEach(e => {
+        const share = angleStep * e.weight;
+        const segStart = cursor;
+        const segEnd = cursor + share;
+        paths += `<path d="${wedgePath(cx,cy,r,segStart,segEnd)}" fill="${colorMap[e.topping]}" stroke="#FFFBF3" stroke-width="${entries.length > 1 ? 1 : 2}"><title>${escapeHtml(title)}</title></path>`;
+        cursor = segEnd;
+      });
     });
     return `
       <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
@@ -653,36 +864,22 @@
       </svg>`;
   }
 
-  function renderPizzas(allocation){
+  function renderPizzas(tape){
     pizzaWall.innerHTML = '';
-    const colorMap = {};
-    state.toppings.forEach((t,i) => colorMap[t] = colorFor(i));
 
-    if(state.toppings.length === 0 || state.pizzaCount === 0){
+    if(state.toppings.length === 0 || state.pizzaCount === 0 || tape.length === 0){
       pizzaWall.innerHTML = '<div class="empty-note">אין מה להציג עדיין.</div>';
       return;
     }
 
-    // sort toppings by count desc, build continuous sequence
-    const sorted = [...state.toppings].sort((a,b) => (allocation[b]||0) - (allocation[a]||0));
-    const sequence = [];
-    sorted.forEach(t => {
-      const count = allocation[t] || 0;
-      for(let i = 0; i < count; i++){
-        sequence.push({ name: t, color: colorMap[t] });
-      }
-    });
-
-    // pad in case of rounding shortfall (shouldn't normally trigger)
-    while(sequence.length < state.pizzaCount * state.slicesPerPizza){
-      sequence.push({ name: 'ללא', color: '#e9dcc4' });
-    }
+    const colorMap = {};
+    state.toppings.forEach((t,i) => colorMap[t] = colorFor(i));
 
     for(let pIdx = 0; pIdx < state.pizzaCount; pIdx++){
-      const chunk = sequence.slice(pIdx*state.slicesPerPizza, (pIdx+1)*state.slicesPerPizza);
+      const chunk = tape.slice(pIdx*state.slicesPerPizza, (pIdx+1)*state.slicesPerPizza);
       const unit = document.createElement('div');
       unit.className = 'pizza-unit';
-      unit.innerHTML = buildPizzaSvg(chunk) + `<div class="label">פיצה ${pIdx+1}</div>`;
+      unit.innerHTML = buildPizzaSvg(chunk, colorMap) + `<div class="label">פיצה ${pIdx+1}</div>`;
       pizzaWall.appendChild(unit);
     }
   }
@@ -694,12 +891,13 @@
   }
 
   calcBtn.onclick = () => {
-    const { allocation, totalSlices } = computeAllocation();
+    const { allocation, scaled, totalSlices } = computeAllocation();
     const cats = categorize(allocation);
+    const tape = buildSliceTape(scaled, totalSlices);
     renderQualTable(allocation, cats);
-    renderQuantTable(allocation, totalSlices);
+    renderQuantTable(allocation, totalSlices, tape);
     renderLegend();
-    renderPizzas(allocation);
+    renderPizzas(tape);
     resultsSection.style.display = 'block';
     resultsSection.scrollIntoView({ behavior:'smooth', block:'start' });
   };
@@ -721,14 +919,18 @@
       if(saved){
         const loaded = JSON.parse(saved);
         if(loaded.toppings) state.toppings = loaded.toppings;
+        if(loaded.categories && loaded.categories.length) state.categories = loaded.categories;
         if(loaded.slicesPerPizza) state.slicesPerPizza = loaded.slicesPerPizza;
         if(loaded.pizzaCount) state.pizzaCount = loaded.pizzaCount;
         if(loaded.people) state.people = loaded.people;
-        // validate people have all current toppings
+        // validate people have all current toppings and a valid category
         state.people.forEach(p => {
           state.toppings.forEach(t => {
             if(!(t in p.ratings)) p.ratings[t] = 3;
           });
+          if(!p.category || !state.categories.includes(p.category)){
+            p.category = state.categories[0] || '';
+          }
         });
       }
     } catch(e){
@@ -742,6 +944,7 @@
   pizzaCountInput.value = state.pizzaCount;
   
   renderToppings();
+  renderCategories();
   renderPeople();
 
   // auto-save on every change
