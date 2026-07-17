@@ -224,7 +224,6 @@
   .btn-indiff:hover{border-color:var(--basil);}
   .btn-indiff.active{background:var(--basil); color:#fff; border-color:var(--basil);}
   .person-category-select{min-width:110px;}
-  .shared-note{font-size:0.78rem; color:var(--ink-soft);}
   .legend{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px;}
   .legend-item{display:flex; align-items:center; gap:6px; font-size:0.85rem;}
   .swatch{width:13px; height:13px; border-radius:4px; display:inline-block;}
@@ -747,33 +746,18 @@
     });
   }
 
-  function renderQuantTable(allocation, totalSlices, tape){
+  function renderQuantTable(allocation, totalSlices){
     quantTable.innerHTML = '';
-    quantTable.innerHTML += `<tr><th>תוספת</th><th>פרוסות</th><th>אחוז</th><th>פרוסה משותפת</th></tr>`;
+    quantTable.innerHTML += `<tr><th>תוספת</th><th>פרוסות</th><th>אחוז</th></tr>`;
     if(state.toppings.length === 0){
-      quantTable.innerHTML += '<tr><td colspan="4" class="empty-note">אין תוספות להצגה.</td></tr>';
+      quantTable.innerHTML += '<tr><td colspan="3" class="empty-note">אין תוספות להצגה.</td></tr>';
       return;
     }
-    const shared = {};
-    state.toppings.forEach(t => shared[t] = []);
-    (tape || []).forEach((entries, idx) => {
-      if(entries.length > 1){
-        const pizzaNum = Math.floor(idx / state.slicesPerPizza) + 1;
-        const sliceNum = (idx % state.slicesPerPizza) + 1;
-        entries.forEach(e => {
-          const partners = entries.filter(o => o.topping !== e.topping).map(o => o.topping);
-          if(partners.length){
-            shared[e.topping].push(`פיצה ${pizzaNum} פרוסה ${sliceNum} (עם ${partners.join(', ')})`);
-          }
-        });
-      }
-    });
     state.toppings.forEach(t => {
       const count = allocation[t] || 0;
       const pct = totalSlices > 0 ? Math.round((count/totalSlices)*100) : 0;
-      const sharedText = shared[t].length ? shared[t].join('; ') : '—';
       const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${escapeHtml(t)}</td><td class="num">${count}</td><td class="num">${pct}%</td><td class="shared-note">${escapeHtml(sharedText)}</td>`;
+      tr.innerHTML = `<td>${escapeHtml(t)}</td><td class="num">${count}</td><td class="num">${pct}%</td>`;
       quantTable.appendChild(tr);
     });
   }
@@ -895,7 +879,7 @@
     const cats = categorize(allocation);
     const tape = buildSliceTape(scaled, totalSlices);
     renderQualTable(allocation, cats);
-    renderQuantTable(allocation, totalSlices, tape);
+    renderQuantTable(allocation, totalSlices);
     renderLegend();
     renderPizzas(tape);
     resultsSection.style.display = 'block';
