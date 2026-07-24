@@ -530,12 +530,13 @@
     }
 
     state.people.forEach(p => {
-      const sumRatings = state.toppings.reduce((s,t) => s + (p.ratings[t] || 0), 0);
+      const weight = t => Math.max(0, (p.ratings[t] || 0) - 1); // 1 star = hate it = zero weight
+      const sumRatings = state.toppings.reduce((s,t) => s + weight(t), 0);
       const desired = p.desiredSlices || 0;
       if(sumRatings === 0){
         state.toppings.forEach(t => raw[t] += desired / state.toppings.length);
       } else {
-        state.toppings.forEach(t => raw[t] += desired * (p.ratings[t] || 0) / sumRatings);
+        state.toppings.forEach(t => raw[t] += desired * weight(t) / sumRatings);
       }
     });
 
