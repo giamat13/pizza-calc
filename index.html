@@ -369,7 +369,7 @@
   function newPerson(name){
     const ratings = {};
     state.toppings.forEach(t => ratings[t] = 3);
-    return { id: uid(), name: name || '', ratings, desiredSlices: defaultDesired() };
+    return { id: uid(), name: name || '', category: state.categories[0] || '', ratings, desiredSlices: defaultDesired() };
   }
 
   // start with two guests
@@ -380,6 +380,9 @@
   const toppingsChips = document.getElementById('toppingsChips');
   const newToppingInput = document.getElementById('newToppingInput');
   const addToppingBtn = document.getElementById('addToppingBtn');
+  const categoriesChips = document.getElementById('categoriesChips');
+  const newCategoryInput = document.getElementById('newCategoryInput');
+  const addCategoryBtn = document.getElementById('addCategoryBtn');
   const slicesPerPizzaSel = document.getElementById('slicesPerPizza');
   const pizzaCountInput = document.getElementById('pizzaCount');
   const suggestPizzasBtn = document.getElementById('suggestPizzasBtn');
@@ -440,6 +443,53 @@
     if(e.key === 'Enter'){ e.preventDefault(); addToppingBtn.click(); }
   });
 
+  // ---------- categories ----------
+  function renderCategories(){
+    categoriesChips.innerHTML = '';
+    if(state.categories.length === 0){
+      categoriesChips.innerHTML = '<div class="empty-note">אין עדיין קטגוריות.</div>';
+      return;
+    }
+    state.categories.forEach(c => {
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      chip.innerHTML = `<span>${escapeHtml(c)}</span>`;
+      const rm = document.createElement('button');
+      rm.textContent = '×';
+      rm.title = 'הסרה';
+      rm.onclick = () => removeCategory(c);
+      chip.appendChild(rm);
+      categoriesChips.appendChild(chip);
+    });
+  }
+
+  function addCategory(name){
+    name = name.trim();
+    if(!name) return;
+    if(state.categories.includes(name)) return;
+    state.categories.push(name);
+    renderCategories();
+    renderPeople();
+    saveState();
+  }
+
+  function removeCategory(name){
+    state.categories = state.categories.filter(c => c !== name);
+    state.people.forEach(p => { if(p.category === name) p.category = state.categories[0] || ''; });
+    renderCategories();
+    renderPeople();
+    saveState();
+  }
+
+  addCategoryBtn.onclick = () => {
+    addCategory(newCategoryInput.value);
+    newCategoryInput.value = '';
+    newCategoryInput.focus();
+  };
+  newCategoryInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter'){ e.preventDefault(); addCategoryBtn.click(); }
+  });
+
   // ---------- pizza settings ----------
   slicesPerPizzaSel.onchange = () => { state.slicesPerPizza = parseInt(slicesPerPizzaSel.value, 10); };
   pizzaCountInput.onchange = () => {
@@ -471,6 +521,19 @@
       nameInput.value = p.name;
       nameInput.oninput = () => { p.name = nameInput.value; saveState(); };
       topLine.appendChild(nameInput);
+
+      const catSelect = document.createElement('select');
+      catSelect.className = 'person-category-select';
+      if(!p.category || !state.categories.includes(p.category)) p.category = state.categories[0] || '';
+      state.categories.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        if(c === p.category) opt.selected = true;
+        catSelect.appendChild(opt);
+      });
+      catSelect.onchange = () => { p.category = catSelect.value; saveState(); };
+      topLine.appendChild(catSelect);
 
       if(state.people.length > 1){
         const rmBtn = document.createElement('button');
@@ -771,6 +834,7 @@
       if(saved){
         const loaded = JSON.parse(saved);
         if(loaded.toppings) state.toppings = loaded.toppings;
+        if(loaded.categories) state.categories = loaded.categories;
         if(loaded.slicesPerPizza) state.slicesPerPizza = loaded.slicesPerPizza;
         if(loaded.pizzaCount) state.pizzaCount = loaded.pizzaCount;
         if(loaded.people) state.people = loaded.people;
@@ -792,6 +856,7 @@
   pizzaCountInput.value = state.pizzaCount;
   
   renderToppings();
+  renderCategories();
   renderPeople();
 
   // auto-save on every change
