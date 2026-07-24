@@ -206,11 +206,24 @@
     font-weight:600;
     color:#fff;
   }
-  .badge.all{background:var(--tomato);}
+  .badge.must{background:var(--tomato-dark);}
   .badge.lots{background:var(--tomato);}
   .badge.medium{background:var(--gold); color:var(--ink);}
   .badge.little{background:var(--basil);}
+  .badge.minimal{background:#ddd0b3; color:#57503f;}
   .badge.none{background:#c9c0b1; color:#57503f;}
+  .btn-indiff{
+    background:transparent;
+    border:1px solid var(--line);
+    color:var(--ink-soft);
+    font-size:0.72rem;
+    padding:4px 9px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .btn-indiff:hover{border-color:var(--basil);}
+  .btn-indiff.active{background:var(--basil); color:#fff; border-color:var(--basil);}
+  .person-category-select{min-width:110px;}
   .legend{display:flex; flex-wrap:wrap; gap:10px; margin:14px 0 4px;}
   .legend-item{display:flex; align-items:center; gap:6px; font-size:0.85rem;}
   .swatch{width:13px; height:13px; border-radius:4px; display:inline-block;}
@@ -276,6 +289,16 @@
   </section>
 
   <section class="card">
+    <h2>קטגוריות אורחים</h2>
+    <p class="hint">למשל מבוגר / ילד — אפשר להוסיף עוד (נוער, טבעוני וכו'). מי שילחץ "לא משנה לי" על תוספת יקבל אוטומטית דירוג דומה לפי מה שאחרים באותה קטגוריה דירגו.</p>
+    <div class="add-topping-row">
+      <input type="text" id="newCategoryInput" placeholder="למשל: נוער">
+      <button class="btn-primary" id="addCategoryBtn">הוספה</button>
+    </div>
+    <div class="chips" id="categoriesChips"></div>
+  </section>
+
+  <section class="card">
     <div class="row" style="justify-content:space-between; align-items:center; margin-bottom:4px;">
       <div>
         <h2>מי בא?</h2>
@@ -329,6 +352,7 @@
 
   let state = {
     toppings: ['מרגריטה','פטריות','פפרוני'],
+    categories: ['מבוגר','ילד'],
     slicesPerPizza: 8,
     pizzaCount: 2,
     people: []
@@ -501,6 +525,19 @@
           stars.appendChild(starBtn);
         }
         row.appendChild(stars);
+
+        const indiffBtn = document.createElement('button');
+        indiffBtn.type = 'button';
+        indiffBtn.className = 'btn-indiff' + (p.ratings[t] === 'any' ? ' active' : '');
+        indiffBtn.textContent = 'לא משנה לי';
+        indiffBtn.title = 'המחשבון ישלים דירוג דומה, לפי הקטגוריה שלך';
+        indiffBtn.onclick = () => {
+          p.ratings[t] = (p.ratings[t] === 'any') ? 3 : 'any';
+          renderPeople();
+          saveState();
+        };
+        row.appendChild(indiffBtn);
+
         card.appendChild(row);
       });
 
@@ -521,6 +558,20 @@
   };
 
   // ---------- calculation ----------
+  // resolves a rating to a number: 'any' ("לא משנה לי") or missing falls back
+  // to same-category peers, then everyone, then a neutral 3.
+  function effectiveRating(person, topping){
+    const r = person.ratings[topping];
+    if(typeof r === 'number') return r;
+    const peers = state.people
+      .filter(p => p.id !== person.id && p.category === person.category)
+      .map(p => p.ratings[topping]).filter(v => typeof v === 'number');
+    if(peers.length) return peers.reduce((a,b) => a+b, 0) / peers.length;
+    const all = state.people.map(p => p.ratings[topping]).filter(v => typeof v === 'number');
+    if(all.length) return all.reduce((a,b) => a+b, 0) / all.length;
+    return 3;
+  }
+
   function computeAllocation(){
     const totalSlices = state.slicesPerPizza * state.pizzaCount;
     const raw = {};
@@ -531,7 +582,7 @@
     }
 
     state.people.forEach(p => {
-      const weight = t => Math.max(0, (p.ratings[t] || 0) - 1); // 1 star = hate it = zero weight
+      const weight = t => Math.max(0, effectiveRating(p,t) - 1); // 1 star = hate it = zero weight
       const sumRatings = state.toppings.reduce((s,t) => s + weight(t), 0);
       const desired = p.desiredSlices || 0;
       if(sumRatings === 0){
