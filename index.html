@@ -206,6 +206,7 @@
     font-weight:600;
     color:#fff;
   }
+  .badge.all{background:var(--tomato);}
   .badge.lots{background:var(--tomato);}
   .badge.medium{background:var(--gold); color:var(--ink);}
   .badge.little{background:var(--basil);}
@@ -568,23 +569,20 @@
     return { allocation: floors, totalSlices };
   }
 
-  function categorize(allocation){
-    const entries = Object.entries(allocation).filter(([,c]) => c > 0).sort((a,b) => b[1]-a[1]);
+  function categorize(allocation, totalSlices){
     const result = {};
-    state.toppings.forEach(t => result[t] = allocation[t] > 0 ? 'medium' : 'none');
-    const n = entries.length;
-    if(n > 0){
-      const third = Math.max(1, Math.ceil(n/3));
-      entries.forEach(([t], idx) => {
-        if(idx < third) result[t] = 'lots';
-        else if(idx >= n - third) result[t] = 'little';
-        else result[t] = 'medium';
-      });
-    }
+    state.toppings.forEach(t => {
+      const pct = totalSlices > 0 ? (allocation[t] || 0) / totalSlices * 100 : 0;
+      if(pct <= 0) result[t] = 'none';
+      else if(pct < 100/3) result[t] = 'little';
+      else if(pct < 200/3) result[t] = 'medium';
+      else if(pct < 100) result[t] = 'lots';
+      else result[t] = 'all';
+    });
     return result;
   }
 
-  const LABELS = { lots:'הרבה', medium:'בינוני', little:'מעט', none:'לא' };
+  const LABELS = { all:'הכל', lots:'הרבה', medium:'בינוני', little:'מעט', none:'לא' };
 
   function renderQualTable(allocation, cats){
     qualTable.innerHTML = '';
@@ -696,7 +694,7 @@
 
   calcBtn.onclick = () => {
     const { allocation, totalSlices } = computeAllocation();
-    const cats = categorize(allocation);
+    const cats = categorize(allocation, totalSlices);
     renderQualTable(allocation, cats);
     renderQuantTable(allocation, totalSlices);
     renderLegend();
